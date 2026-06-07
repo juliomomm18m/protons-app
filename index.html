@@ -45,7 +45,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
 .cev{font-size:8px;padding:2px 4px;border-radius:3px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;border-left:2px solid transparent;}
 .dpanel{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;position:sticky;top:76px;box-shadow:0 1px 4px rgba(26,44,122,.07);}
 .backdrop{position:fixed;inset:0;background:rgba(20,30,70,.45);backdrop-filter:blur(5px);z-index:200;display:flex;align-items:center;justify-content:center;padding:14px;}
-.modal{background:#fff;border-radius:14px;width:100%;max-width:620px;max-height:94vh;overflow-y:auto;box-shadow:0 20px 60px rgba(26,44,122,.18);}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:620px;max-height:94vh;overflow-y:auto;box-shadow:0 20px 60px rgba(26,44,122,.18);display:flex;flex-direction:column;}
 .msm{max-width:440px;}
 .mhdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:#F8F9FC;}
 .mbdy{padding:20px 22px;}
@@ -326,17 +326,17 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
     <button onclick="closeM('om')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
   </div>
   <div class="mbdy">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:13px;">
       <div class="fg"><label>Tipo</label><select id="ft" onchange="fchg()"><option>Manutenção</option><option>Nova Instalação</option></select></div>
       <div class="fg"><label>Prioridade</label><select id="fp"><option>Crítica</option><option>Alta</option><option selected>Média</option><option>Baixa</option></select></div>
-      <div class="fg" style="grid-column:span 2">
+      <div class="fg" style="grid-column:1/-1">
         <label>Cliente</label>
         <div style="display:flex;gap:8px;">
           <input type="text" id="fc" placeholder="Nome do cliente" style="flex:1;padding:9px 11px;border-radius:8px;border:1px solid #DDE1EC;font-size:13px;outline:none;font-family:'Syne',sans-serif;"/>
           <button type="button" onclick="openCliPicker(function(c){document.getElementById('fc').value=c.name||'';document.getElementById('fa').value=c.fullAddress||c.street||'';document.getElementById('fct').value=c.phone||'';})" style="padding:9px 12px;border-radius:8px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;">🔍 Buscar</button>
         </div>
       </div>
-      <div class="fg" style="grid-column:span 2"><label>Endereço</label><input type="text" id="fa" placeholder="Rua, número, bairro"/></div>
+      <div class="fg" style="grid-column:1/-1"><label>Endereço</label><input type="text" id="fa" placeholder="Rua, número, bairro"/></div>
       <div class="fg"><label>Contato</label><input type="text" id="fct" placeholder="(47) 99999-0000"/></div>
       <div class="fg"><label>Serviço</label><select id="fs" onchange="fchg()">
         <option>CFTV / Câmeras</option><option>Alarme</option><option>Controle de Acesso</option>
@@ -345,28 +345,28 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
       </select></div>
       <div class="fg"><label>Status</label><select id="fst"><option>Aguardando</option><option>Em Andamento</option><option>Concluída</option><option>Cancelada</option></select></div>
       <div class="fg"><label>Técnico</label><select id="fte"><option value="">Sem equipe</option><option value="equipe1">Julio (Alpha)</option><option value="equipe2">Cleverson (Beta)</option><option value="equipe3">Rafael (Gamma)</option></select></div>
-      <div class="fg" style="grid-column:span 2">
+      <div class="fg" style="grid-column:1/-1">
         <label id="hl">Ajudante</label>
         <select id="fh"><option value="">Sem ajudante</option><option>Tiago</option><option>Ramon</option></select>
         <div id="hh" style="font-size:10px;color:#8A95A8;margin-top:4px;"></div>
       </div>
-      <div style="grid-column:span 2;background:#EEF3FF;border:1px solid #C2D0F0;border-radius:10px;padding:14px;">
+      <div style="grid-column:1/-1;background:#EEF3FF;border:1px solid #C2D0F0;border-radius:10px;padding:14px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#1A2C7A;margin-bottom:12px;">📅 Agendamento</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr)) 1fr;gap:11px;">
           <div class="fg"><label>Data</label><input type="date" id="fsd"/></div>
           <div class="fg"><label>Início Previsto</label><input type="time" id="fss"/></div>
           <div class="fg"><label>Término Previsto</label><input type="time" id="fse"/></div>
         </div>
       </div>
-      <div style="grid-column:span 2;background:#EDFBF3;border:1px solid #B8E8CC;border-radius:10px;padding:14px;">
+      <div style="grid-column:1/-1;background:#EDFBF3;border:1px solid #B8E8CC;border-radius:10px;padding:14px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#1A9E4A;margin-bottom:12px;">⏱ Execução Real</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:11px;">
           <div class="fg"><label>▶ Início Real</label><input type="time" id="fas" oninput="updDur()"/></div>
           <div class="fg"><label>⏹ Término Real</label><input type="time" id="fae" oninput="updDur()"/></div>
         </div>
         <div id="dpf" style="display:none;margin-top:9px;" class="durbox"></div>
       </div>
-      <div class="fg" style="grid-column:span 2"><label>Observações</label><textarea id="fn" rows="3" placeholder="Detalhes..."></textarea></div>
+      <div class="fg" style="grid-column:1/-1"><label>Observações</label><textarea id="fn" rows="3" placeholder="Detalhes..."></textarea></div>
     </div>
   </div>
   <div class="mftr"><button class="bcancel" onclick="closeM('om')">Cancelar</button><button class="bsave" onclick="saveOS()">Salvar</button></div>
@@ -392,7 +392,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
       📅 Registrar <span id="tm-date-label"></span>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:11px;">
       <div style="background:#EDFBF3;border:1px solid #B8E8CC;border-radius:10px;padding:13px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#1A9E4A;margin-bottom:7px;">▶ Início</div>
         <input type="time" id="tas" oninput="updTDur()" style="width:100%;padding:9px;border-radius:8px;border:1px solid #B8E8CC;color:#1A9E4A;font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;outline:none;background:#fff;"/>
@@ -588,13 +588,13 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
     <button onclick="closeM('cli-modal')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
   </div>
   <div class="mbdy">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:13px;">
 
       <!-- Basico -->
-      <div style="grid-column:span 2;background:#EEF3FF;border:1px solid #C2D0F0;border-radius:10px;padding:14px;">
+      <div style="grid-column:1/-1;background:#EEF3FF;border:1px solid #C2D0F0;border-radius:10px;padding:14px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#1A2C7A;margin-bottom:12px;letter-spacing:.8px;">👤 Dados Básicos</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div class="fg" style="grid-column:span 2"><label>Nome Completo / Razão Social *</label><input type="text" id="cli-name" placeholder="Nome do cliente"/></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;">
+          <div class="fg" style="grid-column:1/-1"><label>Nome Completo / Razão Social *</label><input type="text" id="cli-name" placeholder="Nome do cliente"/></div>
           <div class="fg"><label>Tipo de Pessoa</label><select id="cli-ptype">
             <option value="pf">Pessoa Física</option>
             <option value="pj">Pessoa Jurídica</option>
@@ -612,15 +612,15 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
       </div>
 
       <!-- Contrato (shown only for aluguel/contrato) -->
-      <div id="cli-contract-block" style="grid-column:span 2;display:none;background:#EDFBF3;border:1px solid #B8E8CC;border-radius:10px;padding:14px;">
+      <div id="cli-contract-block" style="grid-column:1/-1;display:none;background:#EDFBF3;border:1px solid #B8E8CC;border-radius:10px;padding:14px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#1A9E4A;margin-bottom:12px;letter-spacing:.8px;">📄 Dados do Contrato</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;">
           <div class="fg"><label>Valor Mensalidade (R$)</label><input type="number" id="cli-monthly" placeholder="0,00" min="0" step="0.01"/></div>
           <div class="fg"><label>Dia Vencimento Pgto</label><input type="number" id="cli-pay-day" placeholder="Ex: 10" min="1" max="31"/></div>
           <div class="fg"><label>Início do Contrato</label><input type="date" id="cli-contract-start"/></div>
           <div class="fg"><label>Vencimento do Contrato</label><input type="date" id="cli-contract-end"/></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-top:12px;">
           <div class="fg"><label>Serviços Inclusos</label><input type="text" id="cli-contract-services" placeholder="Ex: CFTV, Alarme, Controle de Acesso"/></div>
           <div class="fg"><label>Observações do Contrato</label><input type="text" id="cli-contract-obs" placeholder="Condições especiais..."/></div>
         </div>
@@ -632,9 +632,9 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
       </div>
 
       <!-- Contato -->
-      <div style="grid-column:span 2;background:#F8F9FC;border:1px solid #DDE1EC;border-radius:10px;padding:14px;">
+      <div style="grid-column:1/-1;background:#F8F9FC;border:1px solid #DDE1EC;border-radius:10px;padding:14px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#1A2C7A;margin-bottom:12px;letter-spacing:.8px;">📞 Contato</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;">
           <div class="fg"><label>Telefone / WhatsApp Principal</label><input type="text" id="cli-phone" placeholder="+55 48 99999-0000"/></div>
           <div class="fg"><label>Contato Secundário</label><input type="text" id="cli-phone2" placeholder="+55 48 99999-0000"/></div>
           <div class="fg"><label>Nome do Contato Secundário</label><input type="text" id="cli-phone2-name" placeholder="Ex: Responsável, Cônjuge..."/></div>
@@ -642,10 +642,10 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
       </div>
 
       <!-- Endereco -->
-      <div style="grid-column:span 2;background:#F8F9FC;border:1px solid #DDE1EC;border-radius:10px;padding:14px;">
+      <div style="grid-column:1/-1;background:#F8F9FC;border:1px solid #DDE1EC;border-radius:10px;padding:14px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#1A2C7A;margin-bottom:12px;letter-spacing:.8px;">📍 Endereço</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div class="fg" style="grid-column:span 2"><label>Rua / Avenida</label><input type="text" id="cli-street" placeholder="Rua, número"/></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;">
+          <div class="fg" style="grid-column:1/-1"><label>Rua / Avenida</label><input type="text" id="cli-street" placeholder="Rua, número"/></div>
           <div class="fg"><label>Bairro</label><input type="text" id="cli-hood" placeholder="Bairro" list="hood-list"/></div>
           <div class="fg"><label>Cidade</label><input type="text" id="cli-city" placeholder="Cidade" list="city-list"/></div>
           <div class="fg"><label>Estado</label><input type="text" id="cli-state" placeholder="SC" maxlength="2"/></div>
@@ -654,7 +654,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
       </div>
 
       <!-- Obs gestor only -->
-      <div id="cli-obs-block" style="grid-column:span 2;background:#FFFAEE;border:1px solid #F0DCA0;border-radius:10px;padding:14px;">
+      <div id="cli-obs-block" style="grid-column:1/-1;background:#FFFAEE;border:1px solid #F0DCA0;border-radius:10px;padding:14px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#E8A000;margin-bottom:12px;letter-spacing:.8px;">🔒 Observações Internas (Gestores)</div>
         <div class="fg"><textarea id="cli-obs" rows="3" placeholder="Observações internas, histórico de negociação, informações sensíveis..."></textarea></div>
       </div>
@@ -703,8 +703,8 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
     <button onclick="closeM('orc-modal')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
   </div>
   <div class="mbdy" style="display:flex;flex-direction:column;gap:14px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;">
-      <div class="fg" style="grid-column:span 2">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:13px;">
+      <div class="fg" style="grid-column:1/-1">
         <label>Cliente</label>
         <div style="display:flex;gap:8px;">
           <input type="text" id="orc-client" placeholder="Nome do cliente" style="flex:1;padding:9px 11px;border-radius:8px;border:1px solid #DDE1EC;font-size:13px;outline:none;font-family:'Syne',sans-serif;"/>
@@ -715,14 +715,14 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
       <div class="fg"><label>CEP (opcional)</label>
           <input type="text" id="orc-zip" placeholder="00000-000" oninput="autoOrcCEP(this.value)"/>
         </div>
-        <div class="fg" style="grid-column:span 2"><label>Endereço</label><input type="text" id="orc-address" placeholder="Rua, número, bairro"/></div>
+        <div class="fg" style="grid-column:1/-1"><label>Endereço</label><input type="text" id="orc-address" placeholder="Rua, número, bairro"/></div>
       <div class="fg"><label>Serviço / Tipo</label><select id="orc-service">
         <option>CFTV / Câmeras</option><option>Alarme</option><option>Controle de Acesso</option>
         <option>Cerca Elétrica</option><option>Interfone</option><option>Portão Automático</option>
         <option>Monitoramento</option><option>Outros</option>
       </select></div>
       <div class="fg"><label>Data da Visita</label><input type="date" id="orc-date"/></div>
-      <div class="fg" style="grid-column:span 2"><label>Descrição / Observações</label><textarea id="orc-desc" rows="2" placeholder="Descreva o serviço..."></textarea></div>
+      <div class="fg" style="grid-column:1/-1"><label>Descrição / Observações</label><textarea id="orc-desc" rows="2" placeholder="Descreva o serviço..."></textarea></div>
     </div>
 
     <!-- Equipamentos -->
@@ -735,7 +735,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
     <!-- Mao de obra -->
     <div style="background:#EDFBF3;border:1px solid #B8E8CC;border-radius:10px;padding:14px;">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#1A9E4A;margin-bottom:12px;letter-spacing:.8px;">👷 Mão de Obra</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;">
         <div class="fg"><label>Descrição</label><input type="text" id="orc-labor-desc" placeholder="Ex: Instalação completa"/></div>
         <div class="fg"><label>Valor (R$)</label><input type="number" id="orc-labor-val" placeholder="0,00" min="0" step="0.01" oninput="calcOrcTotal()"/></div>
       </div>
@@ -1079,7 +1079,7 @@ window.openSolPanel = function(){
         </div>
         <div style="font-size:12px;color:#555;background:#fff;border:1px solid #DDE1EC;border-radius:8px;padding:10px;margin-bottom:10px">${s.desc||""}</div>
         <div style="font-size:10px;color:#8A95A8;margin-bottom:10px">Enviado por <span style="font-weight:600;color:#1A2C7A">${s.sentBy||""}</span></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;">
           ${s.orcamentoId
             ? `<button onclick="solAction('sol-os','${s.id}')" style="padding:7px;border-radius:8px;border:none;background:linear-gradient(135deg,#E8A000,#C87800);color:#fff;cursor:pointer;font-size:11px;font-weight:700;">📊 Ver Orçamento</button>`
             : `<button onclick="solAction('sol-os','${s.id}')" style="padding:7px;border-radius:8px;border:none;background:linear-gradient(135deg,#1E6FBF,#1A2C7A);color:#fff;cursor:pointer;font-size:11px;font-weight:700;">✅ Abrir OS</button>
@@ -1090,7 +1090,7 @@ window.openSolPanel = function(){
         </div>
       </div>`).join("");
   }
-  document.getElementById("sol-panel").style.display="flex";
+  showModal("sol-panel");
 };
 
 window.handleSolPhotos = function(input){
@@ -1132,7 +1132,7 @@ window.openSolModal = function(){
   document.getElementById("sol-photo-label").textContent = "Adicionar foto(s)";
   ["s-client","s-contact","s-address","s-desc"].forEach(id=>sv(id,""));
   sv("s-type","Solicitação de Serviço");
-  document.getElementById("sm").style.display = "flex";
+  showModal("sm");
 };
 
 window.saveSol = async function(){
@@ -1204,7 +1204,7 @@ window.openOsDetail = function(id){
   </div>`;
 
   // ── Cliente + Equipe ──
-  body += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+  body += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
     <div style="background:#F8F9FC;border:1px solid #DDE1EC;border-radius:9px;padding:12px;">
       <div style="font-size:10px;color:#8A95A8;font-weight:700;text-transform:uppercase;margin-bottom:8px;">👤 Cliente</div>
       <div style="font-size:13px;font-weight:700;">${o.client||""}</div>
@@ -1338,7 +1338,7 @@ window.openOsDetail = function(id){
   }
 
   document.getElementById("osd-body").innerHTML = body;
-  document.getElementById("os-detail").style.display = "flex";
+  showModal("os-detail");
 };
 
 window.openObs = function(id){
@@ -1378,7 +1378,7 @@ window.openObs = function(id){
   const photoBlock = document.getElementById("obs-photo-block");
   photoBlock.style.display = isField() ? "block" : "none";
 
-  document.getElementById("obs-modal").style.display = "flex";
+  showModal("obs-modal");
 };
 
 window.handleObsPhotos = function(input){
@@ -1464,7 +1464,7 @@ window.solAction = async function(fn, id){
     ["fsd","fss","fse","fas","fae"].forEach(id2=>sv(id2,""));
     sv("fc",s.client||"");sv("fa",s.address||"");sv("fct",s.contact||"");sv("fn",s.desc||"");
     fchg();updDur();
-    g("om").style.display="flex";
+    showModal("om");
     toast("Solicitação convertida em OS!");
   } else if(fn==="sol-orc"){
     const s = solicitacoes.find(x=>x.id===id);
@@ -1481,6 +1481,23 @@ function toast(msg,ok){
   t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500);
 }
 window.g=function g(id){return document.getElementById(id);}
+
+window.showModal = function(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.display = "flex";
+  if(window.innerWidth <= 768){
+    el.style.padding = "0";
+    el.style.alignItems = "flex-end";
+    const modal = el.querySelector('.modal');
+    if(modal){
+      modal.style.width = "100%";
+      modal.style.maxWidth = "100vw";
+      modal.style.borderRadius = "20px 20px 0 0";
+      modal.style.margin = "0";
+    }
+  }
+};
 function gv(id){return g(id).value;}
 window.sv=function sv(id,v){const el=document.getElementById(id);if(el)el.value=v||"";}
 
@@ -1789,7 +1806,7 @@ window.openNew=function(date){
   editId=null;g("om-ttl").textContent="Nova Ordem de Serviço";
   sv("ft","Manutenção");sv("fp","Média");sv("fs","CFTV / Câmeras");sv("fst","Aguardando");sv("fte","");sv("fh","");
   ["fc","fa","fct","fn","fsd","fss","fse","fas","fae"].forEach(id=>sv(id,""));
-  sv("fsd",date||"");fchg();updDur();g("om").style.display="flex";
+  sv("fsd",date||"");fchg();updDur();showModal("om");
 };
 window.openEdit=function(id){
   const o=orders.find(x=>x.id===id);if(!o)return;
@@ -1798,7 +1815,7 @@ window.openEdit=function(id){
   sv("fs",o.service);sv("fst",o.status);sv("fte",o.team);sv("fh",o.helper);
   sv("fsd",o.scheduledDate);sv("fss",o.scheduledStart);sv("fse",o.scheduledEnd);
   sv("fas",o.actualStart);sv("fae",o.actualEnd);sv("fn",o.notes);
-  fchg();updDur();g("om").style.display="flex";
+  fchg();updDur();showModal("om");
 };
 window.openTime=function(id){
   const o=orders.find(x=>x.id===id);if(!o)return;
@@ -1807,7 +1824,7 @@ window.openTime=function(id){
   const ref=g("tm-ref");
   if(o.scheduledStart){ref.style.display="block";ref.textContent=`📅 Previsto: ${o.scheduledStart} – ${o.scheduledEnd||"?"}${o.scheduledDate?" em "+o.scheduledDate:""}`;}
   else ref.style.display="none";
-  updTDur();g("tm").style.display="flex";
+  updTDur();showModal("tm");
 };
 window.setView=function(v){
   view=v;document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));render();
@@ -1881,7 +1898,7 @@ window.openNewCli = function(prefill, callback){
     sv("cli-street",prefill.street||"");
   }
   cliCtypeChange();
-  document.getElementById("cli-modal").style.display="flex";
+  showModal("cli-modal");
 };
 
 window.editCli = function(id){
@@ -1900,7 +1917,7 @@ window.editCli = function(id){
   document.getElementById("cli-contract-end").value = c.contractEnd||"";
   cliCtypeChange();
   closeM("cli-detail");
-  document.getElementById("cli-modal").style.display="flex";
+  showModal("cli-modal");
 };
 
 window.saveCli = async function(){
@@ -1963,7 +1980,7 @@ window.openCliDetail = function(id){
       <span style="font-size:11px;font-weight:700;color:${ct.c};background:${ct.bg};padding:4px 12px;border-radius:6px;">${ct.l}</span>
       ${ct.priority?`<span style="font-size:10px;color:#1A9E4A;background:#EDFBF3;padding:3px 10px;border-radius:5px;font-weight:600;">⭐ Prioridade de Atendimento</span>`:""}
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
       <div style="background:#F8F9FC;border:1px solid #DDE1EC;border-radius:9px;padding:12px;">
         <div style="font-size:10px;color:#8A95A8;font-weight:700;text-transform:uppercase;margin-bottom:8px;">📞 Contato</div>
         ${c.phone?`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:600">${c.phone}</span><a href="${waUrl(c.phone,"Ola "+c.name+", aqui e a Protons Solucoes Tecnologicas!")}" target="_blank" style="font-size:10px;color:#1A9E4A;text-decoration:none;font-weight:600">💬 WA</a></div>`:""}
@@ -2084,7 +2101,7 @@ window.openCliDetail = function(id){
   }
   footer+=`<button onclick="closeM('cli-detail')" class="bcancel">Fechar</button>`;
   document.getElementById("cli-detail-footer").innerHTML = footer;
-  document.getElementById("cli-detail").style.display="flex";
+  showModal("cli-detail");
 };
 
 window.delCli = async function(id){
@@ -2139,7 +2156,7 @@ window.openCliPicker = function(callback){
   cliPickerCallback = callback;
   sv("cli-picker-search","");
   renderCliPicker();
-  document.getElementById("cli-picker").style.display="flex";
+  showModal("cli-picker");
 };
 
 window.renderCliPicker = function(){
@@ -2258,7 +2275,7 @@ window.openNewOrc = function(prefill){
   document.getElementById("orc-labor-val").value = "";
   renderOrcItems();
   calcOrcTotal();
-  document.getElementById("orc-modal").style.display = "flex";
+  showModal("orc-modal");
 };
 
 window.addOrcItem = function(){
@@ -2364,7 +2381,7 @@ window.openOrcDetail = function(id){
       ${orc.encerradoMotivo?`<span style="font-size:11px;color:#E03030;background:#FFF0F0;padding:3px 8px;border-radius:5px;font-weight:600;">✖ ${orc.encerradoMotivo}</span>`:""}
       ${orc.visitDate?`<span style="font-size:11px;color:#8A95A8">📅 Visita: ${orc.visitDate}</span>`:""}
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
       <div style="background:#F8F9FC;border:1px solid #DDE1EC;border-radius:9px;padding:12px;">
         <div style="font-size:10px;color:#8A95A8;font-weight:700;text-transform:uppercase;margin-bottom:6px">Cliente</div>
         <div style="font-size:13px;font-weight:700">${orc.client||""}</div>
@@ -2459,7 +2476,7 @@ window.openOrcDetail = function(id){
     footer += `<button onclick="closeM('orc-detail')" class="bcancel">Fechar</button>`;
   }
   document.getElementById("orc-detail-footer").innerHTML = footer;
-  document.getElementById("orc-detail").style.display = "flex";
+  showModal("orc-detail");
 };
 
 window.gerarPDFOrcamento = function(id){
@@ -2607,7 +2624,7 @@ window.editOrc = async function(id){
   closeM("orc-detail");
   renderOrcItems();
   calcOrcTotal();
-  document.getElementById("orc-modal").style.display = "flex";
+  showModal("orc-modal");
 };
 
 const STATUS_ORC_CONFIG = {
@@ -3186,14 +3203,14 @@ function rCal(){
             }).join("")}
             ${o.totalMins?`<div style="font-size:10px;color:#8A95A8;text-align:right;margin-top:4px;padding-top:4px;border-top:1px solid #DDE1EC;">Total: <span style="font-family:'JetBrains Mono',monospace;color:#1A2C7A;font-weight:700">${o.totalMins>=60?Math.floor(o.totalMins/60)+"h"+(o.totalMins%60?" "+o.totalMins%60+"min":""):o.totalMins+"min"}</span></div>`:""}
           </div>`:`
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-top:4px;">
             <div style="background:#EDFBF3;border:1px solid #B8E8CC;border-radius:7px;padding:7px 9px;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:#1A9E4A;margin-bottom:3px">▶ Início</div><div style="font-size:13px;font-weight:700;font-family:JetBrains Mono,monospace;color:#CBD0DC">--:--</div></div>
             <div style="background:#FFF4EE;border:1px solid #F0C8A8;border-radius:7px;padding:7px 9px;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:#D45A1A;margin-bottom:3px">⏹ Término</div><div style="font-size:13px;font-weight:700;font-family:JetBrains Mono,monospace;color:#CBD0DC">--:--</div></div>
           </div>`}
           <button data-fn="detail" data-id="${o.id}" style="width:100%;margin-top:8px;padding:6px;border-radius:7px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:11px;font-weight:700;">🔍 Ver Detalhes</button>
           ${canTime(o)?`<button data-fn="time" data-id="${o.id}" style="width:100%;margin-top:6px;padding:6px;border-radius:7px;border:1px solid #A0CAEF;background:#EEF5FF;color:#1E6FBF;cursor:pointer;font-size:11px;font-weight:700;">⏱ Registrar Horários</button>`:""}
           ${canAddObs(o)&&(o.status==="Concluída"||o.status==="Cancelada")&&isField()?`<button data-fn="obs" data-id="${o.id}" style="width:100%;margin-top:6px;padding:6px;border-radius:7px;border:1px solid #F0DCA0;background:#FFFAEE;color:#E8A000;cursor:pointer;font-size:11px;font-weight:700;">📝 Adicionar Observação</button>`:""}
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-top:6px;">
             <a href="${mapsUrl(o.address||'')}" target="_blank" style="padding:6px;border-radius:7px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;text-decoration:none;font-size:11px;font-weight:700;text-align:center;">📍 Google Maps</a>
             <a href="${waUrl(o.contact||'', waMsg(o,userProfile))}" target="_blank" style="padding:6px;border-radius:7px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;text-decoration:none;font-size:11px;font-weight:700;text-align:center;">💬 WhatsApp</a>
           </div>
@@ -3215,7 +3232,7 @@ onAuthStateChanged(auth, user => {
     userProfile = USERS[user.email] || { role:"tecnico", name:user.email, team:null };
     g("loading").style.display="none";
     g("login-screen").style.display="none";
-    g("app").style.display="flex";
+    showModal("app");
     g("user-name").textContent = userProfile.name;
     g("user-role").textContent = userProfile.role === "gestor" ? "Gestor" : userProfile.role === "tecnico" ? "Técnico" : "Ajudante";
     // Role label
@@ -3315,7 +3332,7 @@ onAuthStateChanged(auth, user => {
     if (unsubOrders) { unsubOrders(); unsubOrders = null; }
     g("loading").style.display="none";
     g("app").style.display="none";
-    g("login-screen").style.display="flex";
+    showModal("login-screen");
   }
 });
 
@@ -3382,7 +3399,7 @@ window.openNotifPanel = function(){
         </div>
       </div>`).join("");
   }
-  document.getElementById("notif-panel").style.display = "flex";
+  showModal("notif-panel");
 };
 
 window.clearNotifs = function(){
