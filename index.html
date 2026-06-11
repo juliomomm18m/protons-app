@@ -1897,7 +1897,11 @@ window.updTDur=function(){
   else if(s) hint.innerHTML=`<span style="color:#1E6FBF;font-weight:600">⚙️ Serviço em andamento</span>`;
   else hint.textContent="";
 };
-window.setNow=function(id){const n=new Date();sv(id,`${p(n.getHours())}:${p(n.getMinutes())}`);updTDur();};
+window.setNow=function(id){
+  const el=g(id);
+  if(el&&el.disabled){toast("Horário bloqueado para edição");return;}
+  const n=new Date();sv(id,`${p(n.getHours())}:${p(n.getMinutes())}`);updTDur();
+};
 window.openNew=function(date){
   editId=null;g("om-ttl").textContent="Nova Ordem de Serviço";
   sv("ft","Manutenção");sv("fp","Média");sv("fs","CFTV / Câmeras");sv("fst","Aguardando");sv("fte","");sv("fh","");
