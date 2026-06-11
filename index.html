@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <link rel="manifest" href="manifest.json"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <meta name="theme-color" content="#1A2C7A"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -45,7 +47,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
 .cev{font-size:8px;padding:2px 4px;border-radius:3px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;border-left:2px solid transparent;}
 .dpanel{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;position:sticky;top:76px;box-shadow:0 1px 4px rgba(26,44,122,.07);}
 .backdrop{position:fixed;inset:0;background:rgba(20,30,70,.45);backdrop-filter:blur(5px);z-index:200;display:flex;align-items:center;justify-content:center;padding:14px;}
-.modal{background:#fff;border-radius:14px;width:100%;max-width:620px;max-height:94vh;overflow-y:auto;box-shadow:0 20px 60px rgba(26,44,122,.18);display:flex;flex-direction:column;}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:620px;max-height:94vh;overflow-y:auto;box-shadow:0 20px 60px rgba(26,44,122,.18);}
 .msm{max-width:440px;}
 .mhdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:#F8F9FC;}
 .mbdy{padding:20px 22px;}
@@ -425,6 +427,40 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
 
 <div id="toast" class="toast"></div>
 
+<!-- MAP PICKER MODAL -->
+<div id="map-picker" class="backdrop" style="display:none;z-index:300;">
+  <div class="modal" style="max-width:650px;max-height:90vh;">
+    <div class="mhdr">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#1A2C7A;">📍 Selecionar Endereço no Mapa</div>
+        <div style="font-size:11px;color:#8A95A8;margin-top:2px;">Clique ou arraste o marcador para o local exato</div>
+      </div>
+      <button onclick="closeM('map-picker')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
+    </div>
+    <div class="mbdy" style="padding:0!important;">
+      <!-- Search bar -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;">
+        <input id="map-search-input" type="text" placeholder="Buscar endereço..." 
+          style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Syne',sans-serif;background:var(--surface);color:var(--text);"
+          onkeydown="if(event.key==='Enter')searchMapAddress()"/>
+        <button onclick="searchMapAddress()" style="padding:8px 14px;border-radius:8px;border:none;background:#1A2C7A;color:#fff;cursor:pointer;font-size:13px;font-weight:700;">🔍</button>
+      </div>
+      <!-- Map -->
+      <div id="map-container" style="height:380px;width:100%;"></div>
+      <!-- Selected address -->
+      <div style="padding:10px 16px;background:var(--surface2);border-top:1px solid var(--border);">
+        <div style="font-size:11px;color:#8A95A8;margin-bottom:4px;">Endereço selecionado:</div>
+        <div id="map-selected-addr" style="font-size:13px;font-weight:600;color:var(--text);">Clique no mapa para selecionar</div>
+        <div id="map-selected-coords" style="font-size:10px;color:#8A95A8;margin-top:2px;"></div>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="bcancel" onclick="closeM('map-picker')">Cancelar</button>
+      <button class="bsave" onclick="confirmMapAddress()">✅ Usar este endereço</button>
+    </div>
+  </div>
+</div>
+
 <!-- MOBILE DRAWER -->
 <div id="drawer-overlay" onclick="closeDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;"></div>
 <div id="drawer" style="position:fixed;top:0;left:-280px;width:280px;height:100vh;background:var(--surface);z-index:401;transition:left .25s ease;box-shadow:4px 0 20px rgba(0,0,0,.2);display:flex;flex-direction:column;overflow-y:auto;">
@@ -581,14 +617,13 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
 
 <!-- CLIENTE MODAL -->
 <div id="cli-modal" class="backdrop" style="display:none;">
-<div class="modal" style="max-width:700px;">
+<div class="modal" style="max-width:700px;display:flex;flex-direction:column;height:min(90vh,900px);">
   <div class="mhdr">
     <div><div id="cli-modal-title" style="font-size:15px;font-weight:800;color:#1A2C7A;">Novo Cliente</div>
     <div style="font-size:10px;color:#8A95A8;margin-top:2px;">Cadastro de cliente</div></div>
     <button onclick="closeM('cli-modal')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
   </div>
-  <div class="mbdy">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:13px;">
+  <div class="mbdy" style="flex:1;overflow-y:auto;min-height:0;"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:13px;">
 
       <!-- Basico -->
       <div style="grid-column:1/-1;background:#EEF3FF;border:1px solid #C2D0F0;border-radius:10px;padding:14px;">
@@ -645,11 +680,33 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
       <div style="grid-column:1/-1;background:#F8F9FC;border:1px solid #DDE1EC;border-radius:10px;padding:14px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#1A2C7A;margin-bottom:12px;letter-spacing:.8px;">📍 Endereço</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;">
-          <div class="fg" style="grid-column:1/-1"><label>Rua / Avenida</label><input type="text" id="cli-street" placeholder="Rua, número"/></div>
+          <div class="fg" style="grid-column:1/-1">
+            <label style="display:flex;align-items:center;justify-content:space-between;">
+              <span>Rua / Avenida</span>
+              <button type="button" onclick="openMapPicker('primary')" style="padding:3px 8px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:10px;font-weight:700;">📍 Mapa</button>
+            </label>
+            <input type="text" id="cli-street" placeholder="Rua, número"/>
+          </div>
           <div class="fg"><label>Bairro</label><input type="text" id="cli-hood" placeholder="Bairro" list="hood-list"/></div>
           <div class="fg"><label>Cidade</label><input type="text" id="cli-city" placeholder="Cidade" list="city-list"/></div>
           <div class="fg"><label>Estado</label><input type="text" id="cli-state" placeholder="SC" maxlength="2"/></div>
           <div class="fg"><label>CEP</label><input type="text" id="cli-zip" placeholder="00000-000"/></div>
+        </div>
+      </div>
+
+      <!-- Endereço Secundário -->
+      <div style="background:#F8F9FC;border:1px solid #DDE1EC;border-radius:10px;padding:14px;margin-bottom:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:11px;font-weight:700;color:#1A2C7A;text-transform:uppercase;letter-spacing:.6px;">📍 Endereço Secundário</div>
+          <button type="button" onclick="openMapPicker('secondary')" style="padding:3px 10px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:10px;font-weight:700;">📍 Mapa</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
+          <div class="fg" style="grid-column:1/-1"><label>Rua / Avenida</label><input type="text" id="cli-street2" placeholder="Rua, número (opcional)"/></div>
+          <div class="fg"><label>Bairro</label><input type="text" id="cli-hood2" placeholder="Bairro" list="hood-list"/></div>
+          <div class="fg"><label>Cidade</label><input type="text" id="cli-city2" placeholder="Cidade" list="city-list"/></div>
+          <div class="fg"><label>Estado</label><input type="text" id="cli-state2" placeholder="SC" maxlength="2"/></div>
+          <div class="fg"><label>CEP</label><input type="text" id="cli-zip2" placeholder="00000-000"/></div>
+          <div class="fg" style="grid-column:1/-1"><label>Referência</label><input type="text" id="cli-addr2-ref" placeholder="Ex: Empresa, escritório, filial..."/></div>
         </div>
       </div>
 
@@ -661,9 +718,9 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
 
     </div>
   </div>
-  <div class="mftr" style="display:flex;flex-wrap:wrap;gap:8px;">
-    <button class="bcancel" onclick="closeM('cli-modal')" style="flex:1;min-width:120px;">Cancelar</button>
-    <button class="bsave" onclick="saveCli()" style="flex:1;min-width:120px;">Salvar Cliente</button>
+  <div class="mftr" style="flex-shrink:0;">
+    <button class="bcancel" onclick="closeM('cli-modal')">Cancelar</button>
+    <button class="bsave" onclick="saveCli()">Salvar Cliente</button>
   </div>
 </div></div>
 
@@ -697,7 +754,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
 
 <!-- ORCAMENTO MODAL -->
 <div id="orc-modal" class="backdrop" style="display:none;z-index:200;">
-<div class="modal" style="max-width:680px;">
+<div class="modal" style="max-width:680px;display:flex;flex-direction:column;max-height:92vh;">
   <div class="mhdr">
     <div><div id="orc-modal-title" style="font-size:15px;font-weight:800;color:#1A2C7A;">Novo Orçamento</div><div style="font-size:10px;color:#8A95A8;margin-top:2px;">Prótons Soluções Tecnológicas</div></div>
     <button onclick="closeM('orc-modal')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
@@ -755,7 +812,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
 
 <!-- ORCAMENTO DETAIL MODAL -->
 <div id="orc-detail" class="backdrop" style="display:none;">
-<div class="modal" style="max-width:680px;">
+<div class="modal" style="max-width:680px;display:flex;flex-direction:column;max-height:92vh;">
   <div class="mhdr">
     <div><div id="orc-detail-title" style="font-size:15px;font-weight:800;color:#1A2C7A;"></div><div id="orc-detail-sub" style="font-size:10px;color:#8A95A8;margin-top:2px;"></div></div>
     <button onclick="closeM('orc-detail')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
@@ -801,7 +858,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
 
 <!-- SOLICITACOES PANEL (gestor) -->
 <div id="sol-panel" class="backdrop" style="display:none;">
-<div class="modal" style="max-width:680px;">
+<div class="modal" style="max-width:680px;display:flex;flex-direction:column;max-height:92vh;">
   <div class="mhdr">
     <div><div style="font-size:15px;font-weight:800;color:#1A2C7A;">📋 Solicitações Pendentes</div><div style="font-size:10px;color:#8A95A8;margin-top:2px;">Pedidos recebidos dos técnicos</div></div>
     <button onclick="closeM('sol-panel')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
@@ -3584,6 +3641,125 @@ window.addEventListener("resize", function(){
   const hr = document.getElementById("header-right");
   if(hr) hr.style.display = isMobile ? "none" : "flex";
 });
+
+// ── LEAFLET MAP PICKER ────────────────────────────────────────────────────
+let _leafletMap = null;
+let _leafletMarker = null;
+let _mapTarget = "primary"; // "primary" or "secondary"
+let _mapSelectedAddr = "";
+let _mapSelectedCoords = null;
+
+window.openMapPicker = function(target){
+  _mapTarget = target || "primary";
+  showModal("map-picker");
+  
+  setTimeout(function(){
+    if(!_leafletMap){
+      _leafletMap = L.map("map-container").setView([-28.2800, -49.1700], 14);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
+        maxZoom: 19
+      }).addTo(_leafletMap);
+      
+      // Click to place marker
+      _leafletMap.on("click", function(e){
+        placeMapMarker(e.latlng.lat, e.latlng.lng);
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
+      });
+    } else {
+      _leafletMap.invalidateSize();
+    }
+    
+    // Pre-fill with existing address if any
+    const existingAddr = target === "secondary" 
+      ? document.getElementById("cli-street2") && document.getElementById("cli-street2").value
+      : document.getElementById("cli-street") && document.getElementById("cli-street").value;
+    if(existingAddr){
+      document.getElementById("map-search-input").value = existingAddr;
+    }
+  }, 300);
+};
+
+function placeMapMarker(lat, lng){
+  if(_leafletMarker){
+    _leafletMarker.setLatLng([lat, lng]);
+  } else {
+    _leafletMarker = L.marker([lat, lng], {draggable: true}).addTo(_leafletMap);
+    _leafletMarker.on("dragend", function(e){
+      const pos = e.target.getLatLng();
+      reverseGeocode(pos.lat, pos.lng);
+    });
+  }
+  _mapSelectedCoords = {lat: lat, lng: lng};
+  document.getElementById("map-selected-coords").textContent = "Lat: "+lat.toFixed(6)+", Lng: "+lng.toFixed(6);
+}
+
+async function reverseGeocode(lat, lng){
+  try{
+    const url = "https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lng+"&addressdetails=1";
+    const res = await fetch(url, {headers:{"Accept-Language":"pt-BR","User-Agent":"ProtonOS/1.0"}});
+    const data = await res.json();
+    if(data && data.address){
+      const a = data.address;
+      const road = a.road || a.pedestrian || a.footway || "";
+      const num = a.house_number || "";
+      const hood = a.suburb || a.neighbourhood || a.quarter || "";
+      const city = a.city || a.town || a.village || "";
+      const state = a.state_code || a.state || "";
+      const parts = [road+(num?" "+num:""), hood, city+(state?"/"+state:"")].filter(Boolean);
+      _mapSelectedAddr = parts.join(", ");
+      document.getElementById("map-selected-addr").textContent = _mapSelectedAddr || data.display_name;
+      
+      // Also store individual fields
+      _leafletMarker._addrData = {
+        street: road + (num ? ", "+num : ""),
+        hood: hood,
+        city: city,
+        state: a.state_code || "SC",
+        zip: a.postcode || ""
+      };
+    }
+  }catch(e){ console.error("Reverse geocode error:", e); }
+}
+
+window.searchMapAddress = async function(){
+  const q = document.getElementById("map-search-input").value.trim();
+  if(!q) return;
+  const data = await geocodeAddress(q);
+  if(!data){ toast("Endereço não encontrado"); return; }
+  _leafletMap.setView([data.lat, data.lon], 17);
+  placeMapMarker(data.lat, data.lon);
+  reverseGeocode(data.lat, data.lon);
+};
+
+window.confirmMapAddress = function(){
+  if(!_mapSelectedCoords){ toast("Selecione um local no mapa"); return; }
+  
+  const d = _leafletMarker && _leafletMarker._addrData;
+  if(_mapTarget === "secondary"){
+    if(d){
+      if(document.getElementById("cli-street2")) document.getElementById("cli-street2").value = d.street || _mapSelectedAddr;
+      if(document.getElementById("cli-hood2"))   document.getElementById("cli-hood2").value   = d.hood  || "";
+      if(document.getElementById("cli-city2"))   document.getElementById("cli-city2").value   = d.city  || "";
+      if(document.getElementById("cli-state2"))  document.getElementById("cli-state2").value  = d.state || "SC";
+    } else {
+      if(document.getElementById("cli-street2")) document.getElementById("cli-street2").value = _mapSelectedAddr;
+    }
+  } else {
+    if(d){
+      if(document.getElementById("cli-street")) document.getElementById("cli-street").value = d.street || _mapSelectedAddr;
+      if(document.getElementById("cli-hood"))   document.getElementById("cli-hood").value   = d.hood  || "";
+      if(document.getElementById("cli-city"))   document.getElementById("cli-city").value   = d.city  || "";
+      if(document.getElementById("cli-state"))  document.getElementById("cli-state").value  = d.state || "SC";
+      if(document.getElementById("cli-zip"))    document.getElementById("cli-zip").value    = d.zip   || "";
+    } else {
+      if(document.getElementById("cli-street")) document.getElementById("cli-street").value = _mapSelectedAddr;
+    }
+  }
+  
+  closeM("map-picker");
+  toast("Endereço preenchido ✓");
+};
 
 window.toggleTheme = function(){
   const isDark = document.body.classList.toggle("dark");
