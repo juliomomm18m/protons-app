@@ -3071,9 +3071,11 @@ function rOrdens(){
   }
   for(const o of list){
     const t=TEAMS[o.team],pc=gpc(o.priority),sc=gsc(o.status),d=calcDur(o.actualStart,o.actualEnd),a=ago(o.createdAt);
-    h+=`<div style="background:#fff;border:1px solid #DDE1EC;border-left:4px solid ${pc.c};border-radius:12px;padding:13px 15px;display:grid;grid-template-columns:36px 1fr auto auto;gap:12px;align-items:center;box-shadow:0 1px 4px rgba(26,44,122,.07);">
-      <div style="text-align:center"><div style="font-size:20px">${pc.i}</div><div style="font-size:9px;font-family:JetBrains Mono,monospace;color:#8A95A8;margin-top:1px">${o.osNumber||""}</div></div>
-      <div>
+    const _m=window.innerWidth<=768;
+    h+=`<div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${pc.c};border-radius:12px;padding:12px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--card-shadow);overflow:hidden;">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="flex-shrink:0;text-align:center;"><div style="font-size:20px">${pc.i}</div><div style="font-size:9px;font-family:JetBrains Mono,monospace;color:#8A95A8">${o.osNumber||""}</div></div>
+        <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
           <span style="font-size:13px;font-weight:700">${o.client||""}</span>
           <span class="tag" style="background:${o.type==="Manutenção"?"#FFF4EE":"#EEF5FF"};color:${o.type==="Manutenção"?"#D45A1A":"#1E6FBF"}">${o.type||""}</span>
