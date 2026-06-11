@@ -969,10 +969,10 @@ const KM_PRICE     = 2.50; // R$ por km
 
 // Região de atendimento: centro aproximado entre as cidades atendidas
 // Braço do Norte, Grão-Pará, Rio Fortuna, Gravatal, Orleans, São Ludgero, Armazém, Tubarão, Laguna
-const REGION_CENTER = {lat: -28.1500, lon: -49.0500}; // centro da região Sul SC
-const REGION_BBOX = "-49.6,-28.7,-48.5,-27.6"; // viewbox: lon_min,lat_min,lon_max,lat_max
+const REGION_CENTER = {lat: -28.25, lon: -49.10}; // centro da região de atendimento
+const REGION_BBOX = "-49.50,-28.55,-48.70,-27.90"; // Sul SC: BN, Grão-Pará, Orleans, Tubarão, Laguna
 
-async function geocodeAddress(address){
+window.geocodeAddress = async function geocodeAddress(address){
   try{
     // Tenta com viewbox restrito à região de atendimento
     const url1 = "https://nominatim.openstreetmap.org/search?format=json&q="
@@ -1005,7 +1005,7 @@ async function geocodeAddress(address){
   }catch(e){ console.error("Geocode error:",e); return null; }
 }
 
-async function calcRouteDistance(destAddress){
+window.calcRouteDistance = async function calcRouteDistance(destAddress){
   try{
     // Geocode destination
     const dest = await geocodeAddress(destAddress);
