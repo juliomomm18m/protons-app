@@ -3072,40 +3072,40 @@ function rOrdens(){
   for(const o of list){
     const t=TEAMS[o.team],pc=gpc(o.priority),sc=gsc(o.status),d=calcDur(o.actualStart,o.actualEnd),a=ago(o.createdAt);
     const _m=window.innerWidth<=768;
-    h+=`<div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${pc.c};border-radius:12px;padding:12px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--card-shadow);overflow:hidden;">
-      <div style="display:flex;align-items:flex-start;gap:10px;">
-        <div style="flex-shrink:0;text-align:center;"><div style="font-size:20px">${pc.i}</div><div style="font-size:9px;font-family:JetBrains Mono,monospace;color:#8A95A8">${o.osNumber||""}</div></div>
-        <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
-          <span style="font-size:13px;font-weight:700">${o.client||""}</span>
-          <span class="tag" style="background:${o.type==="Manutenção"?"#FFF4EE":"#EEF5FF"};color:${o.type==="Manutenção"?"#D45A1A":"#1E6FBF"}">${o.type||""}</span>
-          <span class="tag" style="background:${sc.bg};color:${sc.c}">${o.status||""}</span>
-          ${o.scheduledDate?`<span class="tag" style="background:#EEF3FF;color:#1A2C7A">📅 ${o.scheduledDate}${o.scheduledStart?" "+o.scheduledStart:""}</span>`:""}
+    h+=`<div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${pc.c};border-radius:12px;padding:12px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--card-shadow);overflow:hidden;width:100%;box-sizing:border-box;">
+      <!-- INFO ROW -->
+      <div style="display:flex;align-items:flex-start;gap:10px;min-width:0;">
+        <div style="flex-shrink:0;text-align:center;"><div style="font-size:18px">${pc.i}</div><div style="font-size:9px;font-family:JetBrains Mono,monospace;color:#8A95A8">${o.osNumber||""}</div></div>
+        <div style="flex:1;min-width:0;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:700;word-break:break-word">${o.client||""}</span>
+            <span class="tag" style="background:${o.type==="Manutenção"?"#FFF4EE":"#EEF5FF"};color:${o.type==="Manutenção"?"#D45A1A":"#1E6FBF"}">${o.type||""}</span>
+            <span class="tag" style="background:${sc.bg};color:${sc.c}">${o.status||""}</span>
+            ${o.scheduledDate?`<span class="tag" style="background:#EEF3FF;color:#1A2C7A">📅 ${o.scheduledDate}${o.scheduledStart?" "+o.scheduledStart:""}</span>`:""}
+          </div>
+          <div style="font-size:11px;color:#8A95A8;margin-bottom:3px;word-break:break-word">📍 ${o.address||""}</div>
+          <div style="font-size:11px;color:#8A95A8;margin-bottom:3px">📞 ${o.contact||""}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <span style="font-size:10px;color:#8A95A8">🔧 ${o.service||""}</span>
+            ${t?`<span style="font-size:10px;color:${t.color};font-weight:600">👷 ${t.tech}</span>`:""}
+            ${o.helper?`<span class="tag" style="background:#FFFAEE;color:#E8A000;border:1px solid #F0DCA0">🔧 ${o.helper}</span>`:""}
+            ${o.execLog&&o.execLog.length?`<span style="font-size:10px;color:#1A2C7A;background:#EEF3FF;padding:2px 6px;border-radius:4px;font-weight:600">📋 ${o.execLog.length} dia(s)</span>`:""}
+            ${o.totalMins?`<span class="tag" style="background:#F3F4F7;color:#8A95A8">⏱ ${o.totalMins>=60?Math.floor(o.totalMins/60)+"h"+(o.totalMins%60?" "+o.totalMins%60+"min":""):o.totalMins+"min"}</span>`:""}
+            ${o.laborSuggested&&isGestorOrAdmin()?`<span class="tag" style="background:#EEF3FF;color:#1A2C7A;font-weight:700">💰 R$ ${o.laborSuggested.toLocaleString("pt-BR",{minimumFractionDigits:2})}</span>`:""}
+          </div>
+          ${o.notes?`<div style="font-size:10px;color:#8A95A8;font-style:italic;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📝 ${o.notes.split("\n").pop()}</div>`:""}
         </div>
-        <div style="font-size:11px;color:#8A95A8;margin-bottom:4px">📍 ${o.address||""} · 📞 ${o.contact||""}</div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:10px;color:#8A95A8">🔧 ${o.service||""}</span>
-          ${t?`<span style="font-size:10px;color:${t.color};font-weight:600">👷 ${t.tech}</span>`:""}
-          ${o.helper?`<span class="tag" style="background:#FFFAEE;color:#E8A000;border:1px solid #F0DCA0">🔧 ${o.helper}</span>`:""}
-          ${o.execLog&&o.execLog.length?`<span style="font-size:10px;color:#1A2C7A;background:#EEF3FF;padding:2px 7px;border-radius:4px;font-weight:600">📋 ${o.execLog.length} dia(s) registrado(s)</span>`:""}
-          ${o.totalMins?`<span class="tag" style="background:#F3F4F7;color:#8A95A8">⏱ ${o.totalMins>=60?Math.floor(o.totalMins/60)+"h"+(o.totalMins%60?" "+o.totalMins%60+"min":""):o.totalMins+"min"} total</span>`:""}
-          ${o.laborSuggested&&isGestorOrAdmin()?`<span class="tag" style="background:#EEF3FF;color:#1A2C7A;font-weight:700;">💰 R$ ${o.laborSuggested.toLocaleString("pt-BR",{minimumFractionDigits:2})}</span>`:""}
-          ${o.notes?`<span style="font-size:10px;color:#8A95A8;font-style:italic;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block">📝 ${o.notes.split("\n").pop()}</span>`:""}
-        </div>
+        <div style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:700;text-align:right;color:${a.includes("d")?"#E03030":"#8A95A8"};flex-shrink:0;">${a}<div style="font-size:9px;color:#8A95A8;font-weight:400">atrás</div></div>
       </div>
-      <div style="font-family:JetBrains Mono,monospace;font-size:15px;font-weight:700;text-align:right;color:${a.includes("d")?"#E03030":"#8A95A8"}">${a}<div style="font-size:9px;color:#8A95A8;font-weight:400">atrás</div></div>
-      <div style="display:flex;flex-direction:column;gap:5px">
-        <div style="display:flex;gap:5px">
-          ${isGestorOrAdmin()&&canEdit(o)?`<button data-fn="edit" data-id="${o.id}" style="padding:5px 8px;border-radius:6px;border:1px solid #DDE1EC;cursor:pointer;font-size:11px;background:#F5F7FA;color:#1E6FBF">✏️</button>`:""}
-          ${canDelete()?`<button data-fn="del" data-id="${o.id}" style="padding:5px 8px;border-radius:6px;border:1px solid #DDE1EC;cursor:pointer;font-size:11px;background:#F5F7FA;color:#E03030">🗑</button>`:""}
-        </div>
-        <button data-fn="detail" data-id="${o.id}" style="padding:4px 8px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:10px;font-weight:700;">🔍 Detalhes</button>
-        ${canTime(o)?`<button data-fn="time" data-id="${o.id}" style="padding:4px 8px;border-radius:6px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;cursor:pointer;font-size:10px;font-weight:700;">⏱ Horários</button>`:""}
-        ${canAddObs(o)&&isField()?`<button data-fn="obs" data-id="${o.id}" style="padding:4px 8px;border-radius:6px;border:1px solid #F0DCA0;background:#FFFAEE;color:#E8A000;cursor:pointer;font-size:10px;font-weight:700;">📝 Obs</button>`:""}
-        <div style="display:flex;gap:5px">
-          <a href="${mapsUrl(o.address||'')}" target="_blank" style="padding:4px 7px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;text-decoration:none;font-size:10px;font-weight:700;">📍 Maps</a>
-          <a href="${waUrl(o.contact||'', waMsg(o,userProfile))}" target="_blank" style="padding:4px 7px;border-radius:6px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;text-decoration:none;font-size:10px;font-weight:700;">💬 WA</a>
-        </div>
+      <!-- BUTTONS ROW -->
+      <div style="display:flex;flex-wrap:wrap;gap:5px;width:100%;">
+        <button data-fn="detail" data-id="${o.id}" style="flex:1;min-width:80px;padding:7px 6px;border-radius:7px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:11px;font-weight:700;">🔍 Detalhes</button>
+        ${canTime(o)?`<button data-fn="time" data-id="${o.id}" style="flex:1;min-width:80px;padding:7px 6px;border-radius:7px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;cursor:pointer;font-size:11px;font-weight:700;">⏱ Horários</button>`:""}
+        ${canAddObs(o)&&isField()?`<button data-fn="obs" data-id="${o.id}" style="flex:1;min-width:70px;padding:7px 6px;border-radius:7px;border:1px solid #F0DCA0;background:#FFFAEE;color:#E8A000;cursor:pointer;font-size:11px;font-weight:700;">📝 Obs</button>`:""}
+        <a href="${mapsUrl(o.address||'')}" target="_blank" style="flex:1;min-width:60px;padding:7px 6px;border-radius:7px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;text-decoration:none;font-size:11px;font-weight:700;text-align:center;">📍 Maps</a>
+        <a href="${waUrl(o.contact||'', waMsg(o,userProfile))}" target="_blank" style="flex:1;min-width:50px;padding:7px 6px;border-radius:7px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;text-decoration:none;font-size:11px;font-weight:700;text-align:center;">💬 WA</a>
+        ${isGestorOrAdmin()&&canEdit(o)?`<button data-fn="edit" data-id="${o.id}" style="padding:7px 10px;border-radius:7px;border:1px solid #DDE1EC;cursor:pointer;font-size:12px;background:#F5F7FA;color:#1E6FBF">✏️</button>`:""}
+        ${canDelete()?`<button data-fn="del" data-id="${o.id}" style="padding:7px 10px;border-radius:7px;border:1px solid #DDE1EC;cursor:pointer;font-size:12px;background:#F5F7FA;color:#E03030">🗑</button>`:""}
       </div>
     </div>`;
   }
