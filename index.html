@@ -915,8 +915,8 @@ function canTime(o){
 }
 // ── CIDADES PRÉ-CADASTRADAS ──────────────────────────────────────────────
 const CIDADES_SC = [
-  "Braço do Norte","Capivari de Baixo","Grão-Pará","Gravatal","Imaruí",
-  "Imbituba","Jaguaruna","Lauro Muller","Laguna","Orleans","Pedras Grandes",
+  "Armazém","Braço do Norte","Capivari de Baixo","Grão-Pará","Gravatal","Imaruí",
+  "Imbituba","Jaguaruna","Lauro Müller","Laguna","Orleans","Pedras Grandes","Rio Fortuna",
   "Sangão","São Ludgero","São Martinho","Treze de Maio","Tubarão","Urussanga",
   "Içara","Criciúma","Florianópolis","Joinville","Blumenau","Chapecó",
   "Itajaí","Lages","Palhoça","São José","Biguaçu","Garopaba","Paulo Lopes"
@@ -967,12 +967,40 @@ const SEDE_ADDRESS = "Avenida Felipe Schmidt 1695, Braço do Norte, SC, Brasil";
 const SEDE_COORDS  = {lat: -28.0305, lon: -49.1677}; // Braço do Norte SC
 const KM_PRICE     = 2.50; // R$ por km
 
+// Região de atendimento: centro aproximado entre as cidades atendidas
+// Braço do Norte, Grão-Pará, Rio Fortuna, Gravatal, Orleans, São Ludgero, Armazém, Tubarão, Laguna
+const REGION_CENTER = {lat: -28.1500, lon: -49.0500}; // centro da região Sul SC
+const REGION_BBOX = "-49.6,-28.7,-48.5,-27.6"; // viewbox: lon_min,lat_min,lon_max,lat_max
+
 async function geocodeAddress(address){
   try{
-    const url = "https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(address)+"&limit=1&countrycodes=br";
-    const res = await fetch(url, {headers:{"Accept-Language":"pt-BR","User-Agent":"ProtonOS/1.0"}});
-    const data = await res.json();
-    if(data && data.length > 0) return {lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon)};
+    // Tenta com viewbox restrito à região de atendimento
+    const url1 = "https://nominatim.openstreetmap.org/search?format=json&q="
+      + encodeURIComponent(address + ", SC, Brasil")
+      + "&limit=5&countrycodes=br&viewbox=" + REGION_BBOX + "&bounded=1";
+    const res1 = await fetch(url1, {headers:{"Accept-Language":"pt-BR","User-Agent":"ProtonOS/1.0"}});
+    const data1 = await res1.json();
+    if(data1 && data1.length > 0){
+      // Pega o resultado mais próximo do centro da região
+      let best = data1[0];
+      let bestDist = 999;
+      data1.forEach(function(r){
+        const dlat = parseFloat(r.lat) - REGION_CENTER.lat;
+        const dlon = parseFloat(r.lon) - REGION_CENTER.lon;
+        const dist = Math.sqrt(dlat*dlat + dlon*dlon);
+        if(dist < bestDist){ bestDist = dist; best = r; }
+      });
+      return {lat: parseFloat(best.lat), lon: parseFloat(best.lon)};
+    }
+    // Fallback sem bounded (caso endereço não seja encontrado na região)
+    const url2 = "https://nominatim.openstreetmap.org/search?format=json&q="
+      + encodeURIComponent(address + ", Sul de Santa Catarina, Brasil")
+      + "&limit=1&countrycodes=br";
+    const res2 = await fetch(url2, {headers:{"Accept-Language":"pt-BR","User-Agent":"ProtonOS/1.0"}});
+    const data2 = await res2.json();
+    if(data2 && data2.length > 0){
+      return {lat: parseFloat(data2[0].lat), lon: parseFloat(data2[0].lon)};
+    }
     return null;
   }catch(e){ console.error("Geocode error:",e); return null; }
 }
