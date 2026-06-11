@@ -402,7 +402,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
       </div>
       <div style="background:#FFF4EE;border:1px solid #F0C8A8;border-radius:10px;padding:13px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#D45A1A;margin-bottom:7px;">⏹ Término</div>
-        <input type="time" id="tae" oninput="updTDur()" style="width:100%;padding:9px;border-radius:8px;border:1px solid #F0C8A8;color:#D45A1A;font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;outline:none;background:#fff;"/>
+        <input type="time" id="tae" oninput="updTDur()" ontouchstart="if(this.dataset.locked){event.preventDefault();event.stopPropagation();toast('Horário de término bloqueado');return false;}" onclick="if(this.dataset.locked){event.preventDefault();return false;}" style="width:100%;padding:9px;border-radius:8px;border:1px solid #F0C8A8;color:#D45A1A;font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;outline:none;background:#fff;"/>
         <button style="width:100%;margin-top:7px;padding:5px;border-radius:6px;border:1px solid #F0C8A8;background:#FFE8D6;color:#D45A1A;cursor:pointer;font-size:11px;font-weight:700;" onclick="setNow('tae')">🕐 Agora</button>
       </div>
     </div>
