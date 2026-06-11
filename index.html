@@ -661,9 +661,9 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
 
     </div>
   </div>
-  <div class="mftr">
-    <button class="bcancel" onclick="closeM('cli-modal')">Cancelar</button>
-    <button class="bsave" onclick="saveCli()">Salvar Cliente</button>
+  <div class="mftr" style="display:flex;flex-wrap:wrap;gap:8px;">
+    <button class="bcancel" onclick="closeM('cli-modal')" style="flex:1;min-width:120px;">Cancelar</button>
+    <button class="bsave" onclick="saveCli()" style="flex:1;min-width:120px;">Salvar Cliente</button>
   </div>
 </div></div>
 
@@ -1486,15 +1486,26 @@ window.showModal = function(id){
   const el = document.getElementById(id);
   if(!el) return;
   el.style.display = "flex";
-  if(window.innerWidth <= 768){
+  const isMobile = window.innerWidth <= 768;
+  if(isMobile){
+    // Backdrop: no padding, align bottom
     el.style.padding = "0";
     el.style.alignItems = "flex-end";
+    el.style.justifyContent = "center";
+    // Modal: full width, slide up from bottom
     const modal = el.querySelector('.modal');
     if(modal){
-      modal.style.width = "100%";
-      modal.style.maxWidth = "100vw";
-      modal.style.borderRadius = "20px 20px 0 0";
-      modal.style.margin = "0";
+      modal.style.cssText += ";width:100% !important;max-width:100vw !important;max-height:92vh !important;border-radius:20px 20px 0 0 !important;margin:0 !important;display:flex !important;flex-direction:column !important;overflow:hidden !important;";
+      // Make body scrollable
+      const mbdy = modal.querySelector('.mbdy');
+      if(mbdy){
+        mbdy.style.cssText += ";overflow-y:auto !important;flex:1 1 auto !important;min-height:0 !important;-webkit-overflow-scrolling:touch;";
+      }
+      // Keep footer fixed
+      const mftr = modal.querySelector('.mftr');
+      if(mftr){
+        mftr.style.cssText += ";flex-shrink:0 !important;";
+      }
     }
   }
 };
@@ -2716,7 +2727,8 @@ function renderOSCard(o, t, sc, pc, up){
   const canDel = canDelete();
   const canT = canTime(o);
   const canObs = canAddObs(o) && isField();
-  return `<div class="os-card" style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${pc.c};border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;box-shadow:var(--card-shadow);">
+  const isMob = window.innerWidth <= 768;
+  return `<div class="os-card" style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${pc.c};border-radius:12px;padding:12px;margin-bottom:10px;display:flex;flex-direction:${isMob?'column':'row'};gap:10px;align-items:flex-start;box-shadow:var(--card-shadow);overflow:hidden;">
     <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
       <div style="width:36px;height:36px;border-radius:50%;background:${t?t.color+"22":"#F0F2F7"};display:flex;align-items:center;justify-content:center;font-size:16px;">${t?"👷":"📋"}</div>
       <div style="font-size:9px;color:var(--text2);font-family:JetBrains Mono,monospace;font-weight:600">${o.osNumber||""}</div>
@@ -2736,13 +2748,13 @@ function renderOSCard(o, t, sc, pc, up){
         ${o.totalMins?`<span class="tag" style="background:var(--tag-bg);color:var(--text2)">⏱ ${o.totalMins>=60?Math.floor(o.totalMins/60)+"h"+(o.totalMins%60?" "+o.totalMins%60+"min":""):o.totalMins+"min"}</span>`:""}
       </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
-      <button data-fn="detail" data-id="${o.id}" style="padding:5px 10px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:10px;font-weight:700;">🔍 Detalhes</button>
-      ${canT?`<button data-fn="time" data-id="${o.id}" style="padding:5px 10px;border-radius:6px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;cursor:pointer;font-size:10px;font-weight:700;">⏱ Horários</button>`:""}
-      ${canObs?`<button data-fn="obs" data-id="${o.id}" style="padding:5px 10px;border-radius:6px;border:1px solid #F0DCA0;background:#FFFAEE;color:#E8A000;cursor:pointer;font-size:10px;font-weight:700;">📝 Obs</button>`:""}
-      <div style="display:flex;gap:4px;">
-        <a href="${mapsUrl(o.address||'')}" target="_blank" style="padding:4px 7px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;text-decoration:none;font-size:10px;font-weight:700;">📍</a>
-        <a href="${waUrl(o.contact||'', waMsg(o,up))}" target="_blank" style="padding:4px 7px;border-radius:6px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;text-decoration:none;font-size:10px;font-weight:700;">💬</a>
+    <div style="display:flex;flex-direction:${isMob?'row':'column'};flex-wrap:${isMob?'wrap':'nowrap'};gap:5px;${isMob?'width:100%;':'flex-shrink:0;'}">
+      <button data-fn="detail" data-id="${o.id}" style="padding:6px 10px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:11px;font-weight:700;flex:${isMob?'1':'unset'};">🔍 Detalhes</button>
+      ${canT?`<button data-fn="time" data-id="${o.id}" style="padding:6px 10px;border-radius:6px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;cursor:pointer;font-size:11px;font-weight:700;flex:${isMob?'1':'unset'};">⏱ Horários</button>`:""}
+      ${canObs?`<button data-fn="obs" data-id="${o.id}" style="padding:6px 10px;border-radius:6px;border:1px solid #F0DCA0;background:#FFFAEE;color:#E8A000;cursor:pointer;font-size:11px;font-weight:700;flex:${isMob?'1':'unset'};">📝 Obs</button>`:""}
+      <div style="display:flex;gap:4px;${isMob?'':'margin-top:2px;'}">
+        <a href="${mapsUrl(o.address||'')}" target="_blank" style="padding:6px 10px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;text-decoration:none;font-size:11px;font-weight:700;">📍 Maps</a>
+        <a href="${waUrl(o.contact||'', waMsg(o,up))}" target="_blank" style="padding:6px 10px;border-radius:6px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;text-decoration:none;font-size:11px;font-weight:700;">💬 WA</a>
       </div>
     </div>
   </div>`;
