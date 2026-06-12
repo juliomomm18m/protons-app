@@ -3,6 +3,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <title>Protons OS</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
@@ -397,12 +398,22 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:11px;">
       <div style="background:#EDFBF3;border:1px solid #B8E8CC;border-radius:10px;padding:13px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#1A9E4A;margin-bottom:7px;">▶ Início</div>
-        <input type="time" id="tas" oninput="updTDur()" style="width:100%;padding:9px;border-radius:8px;border:1px solid #B8E8CC;color:#1A9E4A;font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;outline:none;background:#fff;"/>
+        <div style="display:flex;gap:6px;align-items:center;justify-content:center;" id="tas-wrapper">
+          <select id="tas-h" onchange="syncTimeInput('tas')" style="flex:1;padding:10px 4px;border-radius:8px;border:1px solid #B8E8CC;color:#1A9E4A;font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;background:#fff;cursor:pointer;"></select>
+          <span style="font-size:24px;font-weight:800;color:#1A9E4A;">:</span>
+          <select id="tas-m" onchange="syncTimeInput('tas')" style="flex:1;padding:10px 4px;border-radius:8px;border:1px solid #B8E8CC;color:#1A9E4A;font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;background:#fff;cursor:pointer;"></select>
+        </div>
+        <input type="hidden" id="tas" oninput="updTDur()"/>
         <button style="width:100%;margin-top:7px;padding:5px;border-radius:6px;border:1px solid #B8E8CC;background:#D6F5E3;color:#1A9E4A;cursor:pointer;font-size:11px;font-weight:700;" onclick="setNow('tas')">🕐 Agora</button>
       </div>
       <div style="background:#FFF4EE;border:1px solid #F0C8A8;border-radius:10px;padding:13px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#D45A1A;margin-bottom:7px;">⏹ Término</div>
-        <input type="time" id="tae" oninput="updTDur()" ontouchstart="if(this.dataset.locked){event.preventDefault();event.stopPropagation();toast('Horário de término bloqueado');return false;}" onclick="if(this.dataset.locked){event.preventDefault();return false;}" style="width:100%;padding:9px;border-radius:8px;border:1px solid #F0C8A8;color:#D45A1A;font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;outline:none;background:#fff;"/>
+        <div style="display:flex;gap:6px;align-items:center;justify-content:center;" id="tae-wrapper">
+          <select id="tae-h" onchange="syncTimeInput('tae')" style="flex:1;padding:10px 4px;border-radius:8px;border:1px solid #F0C8A8;color:#D45A1A;font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;background:#fff;cursor:pointer;"></select>
+          <span style="font-size:24px;font-weight:800;color:#D45A1A;">:</span>
+          <select id="tae-m" onchange="syncTimeInput('tae')" style="flex:1;padding:10px 4px;border-radius:8px;border:1px solid #F0C8A8;color:#D45A1A;font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;background:#fff;cursor:pointer;"></select>
+        </div>
+        <input type="hidden" id="tae" oninput="updTDur()"/>
         <button style="width:100%;margin-top:7px;padding:5px;border-radius:6px;border:1px solid #F0C8A8;background:#FFE8D6;color:#D45A1A;cursor:pointer;font-size:11px;font-weight:700;" onclick="setNow('tae')">🕐 Agora</button>
       </div>
     </div>
@@ -1871,7 +1882,7 @@ async function showLaborSuggestion(timeStr, value, breakdown, o){
     saveData.dispRound = dispInfo.distRound;
     saveData.dispValue = dispValue;
   }
-  updateDoc(doc(db,"ordens",o.id), saveData);
+  await updateDoc(doc(db,"ordens",o.id), saveData);
 }
 window.closeM=function(id){g(id).style.display="none";};
 window.fchg=function(){
@@ -1890,6 +1901,92 @@ window.updDur=function(){
   const d=calcDur(gv("fas"),gv("fae")),e=g("dpf");
   if(d){e.style.display="block";e.innerHTML=`Duração: <span class="durval">${d}</span>`;}else e.style.display="none";
 };
+// Initialize time selects
+function initTimeSelects(){
+  ['tas','tae'].forEach(function(id){
+    const hSel = document.getElementById(id+'-h');
+    const mSel = document.getElementById(id+'-m');
+    if(!hSel || hSel.options.length > 0) return;
+    for(var h=0; h<24; h++){
+      var o = document.createElement('option');
+      o.value = (h<10?'0':'')+h;
+      o.textContent = (h<10?'0':'')+h;
+      hSel.appendChild(o);
+    }
+    for(var m=0; m<60; m+=5){
+      var o = document.createElement('option');
+      o.value = (m<10?'0':'')+m;
+      o.textContent = (m<10?'0':'')+m;
+      mSel.appendChild(o);
+    }
+    // Add current minutes if not multiple of 5
+    var now = new Date();
+    var curMin = now.getMinutes();
+    if(curMin % 5 !== 0){
+      var o = document.createElement('option');
+      o.value = (curMin<10?'0':'')+curMin;
+      o.textContent = (curMin<10?'0':'')+curMin;
+      mSel.appendChild(o);
+      // Sort options
+      var opts = Array.from(mSel.options).sort(function(a,b){return parseInt(a.value)-parseInt(b.value);});
+      mSel.innerHTML='';
+      opts.forEach(function(opt){ mSel.appendChild(opt); });
+    }
+  });
+}
+
+window.syncTimeInput = function(id){
+  const h = document.getElementById(id+'-h').value;
+  const m = document.getElementById(id+'-m').value;
+  const hidden = document.getElementById(id);
+  if(h && m){
+    hidden.value = h+':'+m;
+    hidden.dispatchEvent(new Event('input'));
+  }
+};
+
+// Override sv() to also update selects
+const _origSv = window.sv || function(id,v){const el=document.getElementById(id);if(el)el.value=v||'';};
+window.sv = function(id, val){
+  _origSv(id, val);
+  if((id==='tas'||id==='tae') && val){
+    const parts = val.split(':');
+    if(parts.length>=2){
+      const hSel = document.getElementById(id+'-h');
+      const mSel = document.getElementById(id+'-m');
+      if(hSel) hSel.value = parts[0];
+      if(mSel){
+        // Find closest minute option
+        var target = parseInt(parts[1]);
+        var closest = Array.from(mSel.options).reduce(function(prev,curr){
+          return Math.abs(parseInt(curr.value)-target) < Math.abs(parseInt(prev.value)-target) ? curr : prev;
+        });
+        mSel.value = closest.value;
+      }
+    }
+  }
+};
+
+// Override gv() to read from hidden input
+const _origGv = window.gv || function(id){const el=document.getElementById(id);return el?el.value:'';};
+window.gv = function(id){
+  return _origGv(id);
+};
+
+// Lock/unlock selects for technicians
+window.lockTimeSelect = function(id, locked){
+  const hSel = document.getElementById(id+'-h');
+  const mSel = document.getElementById(id+'-m');
+  const wrapper = document.getElementById(id+'-wrapper');
+  if(!hSel) return;
+  hSel.disabled = locked;
+  mSel.disabled = locked;
+  if(wrapper){
+    wrapper.style.opacity = locked ? '0.5' : '1';
+    wrapper.style.pointerEvents = locked ? 'none' : 'auto';
+  }
+};
+
 window.updTDur=function(){
   const s=gv("tas"),ae=gv("tae"),d=calcDur(s,ae),dp=g("tdp"),hint=g("tsh");
   if(d){dp.style.display="block";dp.innerHTML=`Duração de hoje: <span class="durval">${d}</span>`;}else dp.style.display="none";
@@ -1924,7 +2021,9 @@ window.openTime=function(id){
   const ref=g("tm-ref");
   if(o.scheduledStart){ref.style.display="block";ref.textContent=`📅 Previsto: ${o.scheduledStart} – ${o.scheduledEnd||"?"}${o.scheduledDate?" em "+o.scheduledDate:""}`;}
   else ref.style.display="none";
-  updTDur();showModal("tm");
+  updTDur();
+  initTimeSelects();
+  showModal("tm");
 };
 window.setView=function(v){
   view=v;document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));render();
@@ -1986,7 +2085,7 @@ window.openNewCli = function(prefill, callback){
   document.getElementById("cli-obs-block").style.display = isGestor ? "block" : "none";
   // Clear all fields
   ["cli-name","cli-doc","cli-email","cli-phone","cli-phone2","cli-phone2-name",
-   "cli-street","cli-hood","cli-city","cli-state","cli-zip","cli-obs",
+   "cli-street","cli-hood","cli-city","cli-state","cli-zip","cli-obs","cli-street2","cli-hood2","cli-city2","cli-state2","cli-zip2","cli-addr2-ref",
    "cli-monthly","cli-pay-day","cli-contract-services","cli-contract-obs"].forEach(id=>sv(id,""));
   sv("cli-ptype","pf"); sv("cli-ctype","normal");
   document.getElementById("cli-birth").value="";
@@ -2040,6 +2139,12 @@ window.saveCli = async function(){
     state: document.getElementById("cli-state").value||null,
     zip:   document.getElementById("cli-zip").value||null,
     obs:   isGestor ? (document.getElementById("cli-obs").value||null) : null,
+    street2:  document.getElementById("cli-street2")  ? document.getElementById("cli-street2").value||null  : null,
+    hood2:    document.getElementById("cli-hood2")    ? document.getElementById("cli-hood2").value||null    : null,
+    city2:    document.getElementById("cli-city2")    ? document.getElementById("cli-city2").value||null    : null,
+    state2:   document.getElementById("cli-state2")   ? document.getElementById("cli-state2").value||null   : null,
+    zip2:     document.getElementById("cli-zip2")     ? document.getElementById("cli-zip2").value||null     : null,
+    addr2ref: document.getElementById("cli-addr2-ref")? document.getElementById("cli-addr2-ref").value||null: null,
     monthly:          isGestor ? (parseFloat(document.getElementById("cli-monthly").value)||null) : null,
     payDay:           isGestor ? (parseInt(document.getElementById("cli-pay-day").value)||null) : null,
     contractStart:    isGestor ? (document.getElementById("cli-contract-start").value||null) : null,
@@ -2890,7 +2995,7 @@ window.render = function render(){
   else if(view==="ordens")mc.innerHTML=rOrdens();
   else if(view==="orcamentos")mc.innerHTML=rOrcamentos();
   else if(view==="clientes")mc.innerHTML=rClientes();
-  else if(view==="relatorios")mc.innerHTML=rRelatorios();
+  else if(view==="relatorios"){mc.innerHTML=rRelatorios(); setTimeout(function(){ if(window.initRelCharts) window.initRelCharts(); }, 500);}
   else mc.innerHTML=rCal();
   mc.querySelectorAll("[data-fn]").forEach(el=>{
     el.addEventListener("click",function(){
@@ -2915,7 +3020,7 @@ window.render = function render(){
   });
 
   // Init charts if on relatorios view
-  if(view==="relatorios") setTimeout(initRelCharts, 100);
+
     });
   });
 }
@@ -3977,11 +4082,27 @@ function rRelatorios(){
   });
   if(stats.length===0)h+="<div style='text-align:center;padding:60px;color:#8A95A8'><div style='font-size:36px;margin-bottom:10px'>&#128202;</div><div style='font-size:14px;font-weight:600'>Nenhum dado no periodo</div></div>";
   h+="</div></div>";
+  window._relStats = stats;
+  window._relOrders = orders;
+  window._relClientes = clientes;
+  window._relPeriodVal = p;
   return h;
 }
 
-function initRelCharts(){
-  if(typeof Chart === "undefined") return;
+// Track chart instances to destroy before recreating
+var _chartInstances = {};
+
+window.initRelCharts = function initRelCharts(){
+  if(typeof Chart === "undefined"){ console.log("Chart.js not loaded"); return; }
+  
+  console.log("initRelCharts called, orders:", orders.length, "canvas:", !!document.getElementById("chart-status"));
+  
+  // Destroy existing chart instances
+  Object.keys(_chartInstances).forEach(function(key){
+    try{ _chartInstances[key].destroy(); }catch(e){}
+    delete _chartInstances[key];
+  });
+
   Chart.defaults.font.family = "'Syne', Arial, sans-serif";
   Chart.defaults.color = getComputedStyle(document.body).getPropertyValue("--text2")||"#8A95A8";
 
@@ -3994,7 +4115,7 @@ function initRelCharts(){
       "Concluída":    {count: orders.filter(function(o){return o.status==="Concluída";}).length,    color:"#1A9E4A"},
       "Cancelada":    {count: orders.filter(function(o){return o.status==="Cancelada";}).length,    color:"#E03030"}
     };
-    new Chart(ctx1, {
+    _chartInstances['status'] = new Chart(ctx1, {
       type:"doughnut",
       data:{
         labels: Object.keys(statusData),
@@ -4020,7 +4141,7 @@ function initRelCharts(){
       var cnt=orders.filter(function(o){return o.helper===hn&&(o.execLog||[]).some(function(ex){return inDR(ex.date,s2,e2);});}).length;
       techLabels.push(hn); techCounts.push(cnt); techColors.push("#E8A000");
     });
-    new Chart(ctx2,{
+    _chartInstances['tech'] = new Chart(ctx2,{
       type:"bar",
       data:{labels:techLabels,datasets:[{label:"OS",data:techCounts,backgroundColor:techColors,borderRadius:6,borderWidth:0}]},
       options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:"rgba(0,0,0,.05)"}},x:{grid:{display:false}}}}
@@ -4045,7 +4166,7 @@ function initRelCharts(){
       dVals.push(parseFloat((allDM[dt]/60).toFixed(1)));
     });
     if(dLabels.length===0){dLabels=["Sem dados"];dVals=[0];}
-    new Chart(ctx3,{
+    _chartInstances['hours'] = new Chart(ctx3,{
       type:"line",
       data:{labels:dLabels,datasets:[{label:"Horas",data:dVals,borderColor:"#1A2C7A",backgroundColor:"rgba(26,44,122,.1)",fill:true,tension:.4,pointBackgroundColor:"#1A2C7A",pointRadius:4}]},
       options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"}},x:{grid:{display:false}}}}
@@ -4067,7 +4188,7 @@ function initRelCharts(){
       revVals.push(rev4);
       revColors.push(mi===0?"#1A9E4A":"#1E6FBF");
     }
-    new Chart(ctx4,{
+    _chartInstances['revenue'] = new Chart(ctx4,{
       type:"bar",
       data:{labels:revLabels,datasets:[{label:"R$",data:revVals,backgroundColor:revColors,borderRadius:6,borderWidth:0}]},
       options:{responsive:true,plugins:{legend:{display:false}},scales:{
