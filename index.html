@@ -409,7 +409,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
           <select id="tas-m" onchange="syncTimeInput('tas')" style="flex:1;padding:10px 4px;border-radius:8px;border:1px solid #B8E8CC;color:#1A9E4A;font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;background:#fff;cursor:pointer;"></select>
         </div>
         <input type="hidden" id="tas" oninput="updTDur()"/>
-        <button style="width:100%;margin-top:7px;padding:5px;border-radius:6px;border:1px solid #B8E8CC;background:#D6F5E3;color:#1A9E4A;cursor:pointer;font-size:11px;font-weight:700;" onclick="setNow('tas')">🕐 Agora</button>
+        <button id="btn-now-tas" style="width:100%;margin-top:7px;padding:5px;border-radius:6px;border:1px solid #B8E8CC;background:#D6F5E3;color:#1A9E4A;cursor:pointer;font-size:11px;font-weight:700;" onclick="setNow('tas')">🕐 Agora</button>
       </div>
       <div style="background:#FFF4EE;border:1px solid #F0C8A8;border-radius:10px;padding:13px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#D45A1A;margin-bottom:7px;">⏹ Término</div>
@@ -419,7 +419,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
           <select id="tae-m" onchange="syncTimeInput('tae')" style="flex:1;padding:10px 4px;border-radius:8px;border:1px solid #F0C8A8;color:#D45A1A;font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;background:#fff;cursor:pointer;"></select>
         </div>
         <input type="hidden" id="tae" oninput="updTDur()"/>
-        <button style="width:100%;margin-top:7px;padding:5px;border-radius:6px;border:1px solid #F0C8A8;background:#FFE8D6;color:#D45A1A;cursor:pointer;font-size:11px;font-weight:700;" onclick="setNow('tae')">🕐 Agora</button>
+        <button id="btn-now-tae" style="width:100%;margin-top:7px;padding:5px;border-radius:6px;border:1px solid #F0C8A8;background:#FFE8D6;color:#D45A1A;cursor:pointer;font-size:11px;font-weight:700;" onclick="setNow('tae')">🕐 Agora</button>
       </div>
     </div>
     <div id="tdp" style="display:none;" class="durbox"></div>
@@ -2027,31 +2027,45 @@ window.lockTimeSelect = function(id, locked){
   const mSel = document.getElementById(id+'-m');
   const wrapper = document.getElementById(id+'-wrapper');
   const hiddenInput = document.getElementById(id);
+  const nowBtn = document.getElementById('btn-now-'+id);
   if(!hSel) return;
 
+  // Lock/unlock the hidden input itself — this is what setNow checks
+  if(hiddenInput) hiddenInput.disabled = locked;
+
+  // Lock/unlock selects
   hSel.disabled = locked;
   mSel.disabled = locked;
   hSel.tabIndex = locked ? -1 : 0;
   mSel.tabIndex = locked ? -1 : 0;
 
+  // Lock/unlock the Agora button
+  if(nowBtn){
+    nowBtn.disabled = locked;
+    nowBtn.style.opacity = locked ? '0.35' : '1';
+    nowBtn.style.pointerEvents = locked ? 'none' : 'auto';
+    nowBtn.style.cursor = locked ? 'not-allowed' : 'pointer';
+  }
+
   if(wrapper){
-    wrapper.style.opacity = locked ? '0.45' : '1';
+    wrapper.style.opacity = locked ? '0.4' : '1';
     wrapper.style.pointerEvents = locked ? 'none' : 'auto';
     wrapper.style.userSelect = locked ? 'none' : 'auto';
+
     // Show/hide static display
     var displayId = id+'-display';
     var existing = document.getElementById(displayId);
     if(locked){
-      // Hide selects, show static label
       hSel.style.display = 'none';
       mSel.style.display = 'none';
-      wrapper.querySelector('span') && (wrapper.querySelector('span').style.display = 'none');
+      var colonSpan = wrapper.querySelector('span');
+      if(colonSpan) colonSpan.style.display = 'none';
       if(!existing){
         var disp = document.createElement('div');
         disp.id = displayId;
         var val = hiddenInput ? hiddenInput.value : '';
         disp.textContent = val || '--:--';
-        disp.style.cssText = 'font-size:32px;font-weight:800;font-family:JetBrains Mono,monospace;text-align:center;width:100%;padding:6px 0;opacity:0.5;';
+        disp.style.cssText = 'font-size:36px;font-weight:800;font-family:JetBrains Mono,monospace;text-align:center;width:100%;padding:6px 0;color:#8A95A8;letter-spacing:2px;';
         wrapper.appendChild(disp);
       } else {
         var val = hiddenInput ? hiddenInput.value : '';
@@ -2059,10 +2073,10 @@ window.lockTimeSelect = function(id, locked){
         existing.style.display = '';
       }
     } else {
-      // Show selects, hide static label
       hSel.style.display = '';
       mSel.style.display = '';
-      wrapper.querySelector('span') && (wrapper.querySelector('span').style.display = '');
+      var colonSpan = wrapper.querySelector('span');
+      if(colonSpan) colonSpan.style.display = '';
       if(existing) existing.style.display = 'none';
     }
   }
