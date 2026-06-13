@@ -2067,6 +2067,7 @@ window.openTime=function(id){
 
   // Pre-fill times from today's open session if any
   const openSess = execLog.find(e=>e.date===today2&&e.start&&!e.end);
+  const hasTodayClosed = execLog.some(e=>e.date===today2&&e.start&&e.end);
   if(openSess){ sv("tas",openSess.start); sv("tae",""); }
   else { sv("tas",""); sv("tae",""); }
 
@@ -2077,14 +2078,34 @@ window.openTime=function(id){
   // Reset mark-done checkbox
   const mkDone = document.getElementById("t-mark-done"); if(mkDone) mkDone.checked=false;
 
-  // Técnicos só podem usar o botão "Agora" — bloquear edição manual dos selects
+  // Para técnicos: bloqueio inteligente baseado no estado da sessão
+  // - Sem sessão aberta hoje: libera início, bloqueia término
+  // - Com sessão aberta (início já salvo): bloqueia início, libera término
+  // - Admin/gestor: tudo livre
   const fieldUser = isField();
-  lockTimeSelect("tas", fieldUser);
-  lockTimeSelect("tae", fieldUser);
+  if(fieldUser){
+    const startAlreadySaved = !!openSess;
+    lockTimeSelect("tas", startAlreadySaved);          // início: bloqueado se já salvo
+    lockTimeSelect("tae", !startAlreadySaved);         // término: bloqueado até ter início salvo
+  } else {
+    lockTimeSelect("tas", false);
+    lockTimeSelect("tae", false);
+  }
 
-  // Mostrar aviso para técnicos
+  // Aviso contextual para técnicos
   const fieldHint = document.getElementById("tm-field-hint");
-  if(fieldHint) fieldHint.style.display = fieldUser ? "block" : "none";
+  if(fieldHint){
+    fieldHint.style.display = fieldUser ? "block" : "none";
+    if(fieldUser){
+      if(openSess){
+        fieldHint.innerHTML = `⏱ Início registrado às <strong>${openSess.start}</strong>. Clique em 🕐 <strong>Agora</strong> para registrar o término.`;
+      } else if(hasTodayClosed){
+        fieldHint.innerHTML = `✅ Sessão de hoje finalizada. Clique em ➕ acima para registrar outro período.`;
+      } else {
+        fieldHint.innerHTML = `▶ Clique em 🕐 <strong>Agora</strong> para registrar o horário de início.`;
+      }
+    }
+  }
 
   updTDur();
   initTimeSelects();
@@ -4133,6 +4154,135 @@ function rRelatorios(){
   h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px'>🚗 KM Rodado por Técnico</div>";
   h+="<canvas id='chart-km' height='120'></canvas></div>";
 
+  // ── 1. TAXA DE CONCLUSÃO NO PRAZO ────────────────────────────────────
+  var osComSchedule = orders.filter(function(o){ return o.scheduledDate && o.status === "Concluída"; });
+  var onTime = 0, late = 0;
+  osComSchedule.forEach(function(o){
+    var lastExec = (o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});
+    if(!lastExec.length) return;
+    var lastDate = lastExec[lastExec.length-1].date;
+    if(lastDate <= o.scheduledDate) onTime++; else late++;
+  });
+  var total_sched = onTime + late;
+  var pct_ontime = total_sched > 0 ? Math.round(onTime/total_sched*100) : null;
+  var pct_late   = total_sched > 0 ? Math.round(late/total_sched*100) : null;
+  var gauge_color = pct_ontime===null ? "#8A95A8" : pct_ontime>=80 ? "#1A9E4A" : pct_ontime>=60 ? "#E8A000" : "#E03030";
+
+  // OS by service
+  var serviceMap = {};
+  orders.forEach(function(o){ if(!o.service) return; serviceMap[o.service]=(serviceMap[o.service]||0)+1; });
+  var serviceEntries = Object.entries(serviceMap).sort(function(a,b){return b[1]-a[1];});
+  var serviceColors = ["#1A2C7A","#1E6FBF","#1A9E4A","#E8A000","#D45A1A","#E03030","#8A95A8","#6B48FF"];
+  var totalServiceOS = orders.length || 1;
+
+  h += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px'>";
+
+  // Card: taxa de conclusão no prazo
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px'>";
+  h += "<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:16px;letter-spacing:.8px'>✅ Taxa de Conclusão no Prazo</div>";
+  if(pct_ontime === null){
+    h += "<div style='text-align:center;padding:20px 0;color:#8A95A8;font-size:13px'>Sem OS com data agendada concluída ainda</div>";
+  } else {
+    // Big gauge number
+    h += "<div style='text-align:center;margin-bottom:16px'>";
+    h += "<div style='font-size:52px;font-weight:800;color:"+gauge_color+";font-family:JetBrains Mono,monospace;line-height:1'>"+pct_ontime+"%</div>";
+    h += "<div style='font-size:12px;color:#8A95A8;margin-top:6px'>concluídas no prazo</div>";
+    h += "</div>";
+    // Progress bar
+    h += "<div style='background:#F0F2F7;border-radius:8px;height:10px;margin-bottom:12px;overflow:hidden'>";
+    h += "<div style='background:"+gauge_color+";width:"+pct_ontime+"%;height:100%;border-radius:8px;transition:width .5s'></div></div>";
+    // Stats row
+    h += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>";
+    h += "<div style='background:#EDFBF3;border-radius:8px;padding:10px;text-align:center'><div style='font-size:10px;color:#1A9E4A;font-weight:700;text-transform:uppercase'>No prazo</div><div style='font-size:20px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace'>"+onTime+"</div></div>";
+    h += "<div style='background:#FFF0F0;border-radius:8px;padding:10px;text-align:center'><div style='font-size:10px;color:#E03030;font-weight:700;text-transform:uppercase'>Atrasadas</div><div style='font-size:20px;font-weight:800;color:#E03030;font-family:JetBrains Mono,monospace'>"+late+"</div></div>";
+    h += "</div>";
+    h += "<div style='font-size:10px;color:#8A95A8;text-align:center;margin-top:8px'>Total: "+total_sched+" OS com data agendada concluídas</div>";
+  }
+  h += "</div>";
+
+  // Card: OS por tipo de serviço
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px'>";
+  h += "<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px'>🔧 OS por Tipo de Serviço</div>";
+  if(serviceEntries.length === 0){
+    h += "<div style='text-align:center;padding:20px 0;color:#8A95A8;font-size:13px'>Sem dados</div>";
+  } else {
+    serviceEntries.forEach(function(entry, idx){
+      var svc = entry[0], cnt = entry[1];
+      var pct = Math.round(cnt/totalServiceOS*100);
+      var col = serviceColors[idx % serviceColors.length];
+      h += "<div style='margin-bottom:10px'>";
+      h += "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px'>";
+      h += "<div style='font-size:12px;font-weight:600;color:var(--text)'>"+svc+"</div>";
+      h += "<div style='display:flex;align-items:center;gap:8px'><span style='font-size:11px;color:#8A95A8'>"+cnt+" OS</span><span style='font-size:11px;font-weight:700;color:"+col+"'>"+pct+"%</span></div>";
+      h += "</div>";
+      h += "<div style='background:#F0F2F7;border-radius:4px;height:6px;overflow:hidden'>";
+      h += "<div style='background:"+col+";width:"+pct+"%;height:100%;border-radius:4px'></div></div></div>";
+    });
+  }
+  h += "</div>";
+  h += "</div>"; // close grid
+
+  // ── 2. RECEITA CONSOLIDADA ─────────────────────────────────────────────
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px'>";
+  h += "<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:16px;letter-spacing:.8px'>💰 Receita Consolidada — últimos 6 meses</div>";
+
+  var now6 = new Date();
+  var rev6months = [];
+  for(var mi6=5; mi6>=0; mi6--){
+    var d6 = new Date(now6.getFullYear(), now6.getMonth()-mi6, 1);
+    var key6 = d6.getFullYear()+"-"+p(d6.getMonth()+1);
+    var label6 = d6.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"});
+    // Contratos + alugueis pagos
+    var recorrente6 = clientes.filter(function(c){ return (c.ctype==="contrato"||c.ctype==="aluguel")&&c.monthly; })
+      .reduce(function(sum,c){ return sum + ((c.payments&&c.payments[key6]) ? (c.monthly||0) : 0); }, 0);
+    // Mão de obra OS concluídas no mês
+    var moStart6 = new Date(d6.getFullYear(), d6.getMonth(), 1);
+    var moEnd6   = new Date(d6.getFullYear(), d6.getMonth()+1, 0, 23, 59, 59);
+    var labor6 = orders.filter(function(o){ return o.status==="Concluída" && o.laborTotal > 0; })
+      .reduce(function(sum,o){
+        var hasInMonth = (o.execLog||[]).some(function(ex){ return inDR(ex.date, moStart6, moEnd6); });
+        return sum + (hasInMonth ? (o.laborTotal||0) : 0);
+      }, 0);
+    // Orçamentos aprovados/convertidos no mês
+    var orc6 = orcamentos.filter(function(orc){
+      if(orc.status!=="aprovado") return false;
+      if(!orc.createdAt) return false;
+      var dt = orc.createdAt.toDate ? orc.createdAt.toDate() : new Date(orc.createdAt);
+      return dt >= moStart6 && dt <= moEnd6;
+    }).reduce(function(sum,orc){ return sum + (orc.total||0); }, 0);
+    rev6months.push({label:label6, recorrente:recorrente6, labor:labor6, orc:orc6, total:recorrente6+labor6+orc6, key:key6, moStart:moStart6, moEnd:moEnd6});
+  }
+
+  // Summary totals
+  var totalRec6   = rev6months.reduce(function(s,m){return s+m.recorrente;},0);
+  var totalLab6   = rev6months.reduce(function(s,m){return s+m.labor;},0);
+  var totalOrc6   = rev6months.reduce(function(s,m){return s+m.orc;},0);
+  var totalRev6   = totalRec6+totalLab6+totalOrc6;
+  var currentMKey = now6.getFullYear()+"-"+p(now6.getMonth()+1);
+  var currentM    = rev6months.find(function(m){return m.key===currentMKey;})||{total:0,recorrente:0,labor:0,orc:0};
+
+  // KPI row
+  h += "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px'>";
+  h += "<div style='background:linear-gradient(135deg,#1A2C7A,#1E6FBF);border-radius:10px;padding:12px;text-align:center'><div style='font-size:9px;color:rgba(255,255,255,.7);text-transform:uppercase;font-weight:700;margin-bottom:4px'>Este mês</div><div style='font-size:18px;font-weight:800;color:#fff;font-family:JetBrains Mono,monospace'>R$ "+Math.round(currentM.total).toLocaleString("pt-BR")+"</div></div>";
+  h += "<div style='background:#EDFBF3;border:1px solid #B8E8CC;border-radius:10px;padding:12px;text-align:center'><div style='font-size:9px;color:#1A9E4A;text-transform:uppercase;font-weight:700;margin-bottom:4px'>Recorrente 6m</div><div style='font-size:18px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace'>R$ "+Math.round(totalRec6).toLocaleString("pt-BR")+"</div></div>";
+  h += "<div style='background:#EEF5FF;border:1px solid #A0CAEF;border-radius:10px;padding:12px;text-align:center'><div style='font-size:9px;color:#1E6FBF;text-transform:uppercase;font-weight:700;margin-bottom:4px'>Mão de obra 6m</div><div style='font-size:18px;font-weight:800;color:#1E6FBF;font-family:JetBrains Mono,monospace'>R$ "+Math.round(totalLab6).toLocaleString("pt-BR")+"</div></div>";
+  h += "<div style='background:#FFFAEE;border:1px solid #F0DCA0;border-radius:10px;padding:12px;text-align:center'><div style='font-size:9px;color:#E8A000;text-transform:uppercase;font-weight:700;margin-bottom:4px'>Orçamentos 6m</div><div style='font-size:18px;font-weight:800;color:#E8A000;font-family:JetBrains Mono,monospace'>R$ "+Math.round(totalOrc6).toLocaleString("pt-BR")+"</div></div>";
+  h += "</div>";
+
+  // Stacked bar chart canvas
+  h += "<canvas id='chart-revenue-full' height='140'></canvas>";
+
+  // Legend
+  h += "<div style='display:flex;gap:16px;justify-content:center;margin-top:10px'>";
+  h += "<div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)'><div style='width:12px;height:12px;background:#1A9E4A;border-radius:3px'></div>Contratos/Alugueis</div>";
+  h += "<div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)'><div style='width:12px;height:12px;background:#1E6FBF;border-radius:3px'></div>Mão de obra</div>";
+  h += "<div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)'><div style='width:12px;height:12px;background:#E8A000;border-radius:3px'></div>Orçamentos aprovados</div>";
+  h += "</div>";
+  h += "</div>"; // close receita card
+
+  // Save months data for chart init
+  h += "<script>window._rev6months = "+JSON.stringify(rev6months)+";<\/script>";
+
   // ── PER TECH CARDS ────────────────────────────────────────────────────
   h+="<div style='display:flex;flex-direction:column;gap:16px'>";
   stats.forEach(function(ts){
@@ -4272,7 +4422,6 @@ window.initRelCharts = function initRelCharts(){
       }}
     });
   }
-}
 
   // 5. KM por técnico
   var ctx5 = document.getElementById("chart-km");
@@ -4319,6 +4468,37 @@ window.initRelCharts = function initRelCharts(){
     });
   }
 
+  // 6. Receita consolidada empilhada
+  var ctx6 = document.getElementById("chart-revenue-full");
+  if(ctx6 && window._rev6months){
+    var rm = window._rev6months;
+    _chartInstances['revenue-full'] = new Chart(ctx6,{
+      type:"bar",
+      data:{
+        labels: rm.map(function(m){return m.label;}),
+        datasets:[
+          {label:"Contratos/Alugueis",data:rm.map(function(m){return Math.round(m.recorrente);}),backgroundColor:"#1A9E4A",borderRadius:4,borderWidth:0,stack:"rev"},
+          {label:"Mão de obra",data:rm.map(function(m){return Math.round(m.labor);}),backgroundColor:"#1E6FBF",borderRadius:0,borderWidth:0,stack:"rev"},
+          {label:"Orçamentos",data:rm.map(function(m){return Math.round(m.orc);}),backgroundColor:"#E8A000",borderRadius:4,borderWidth:0,stack:"rev"}
+        ]
+      },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{
+            label:function(c){return c.dataset.label+": R$ "+c.raw.toLocaleString("pt-BR");},
+            footer:function(items){var total=items.reduce(function(s,i){return s+i.raw;},0);return "Total: R$ "+total.toLocaleString("pt-BR");}
+          }}
+        },
+        scales:{
+          y:{beginAtZero:true,stacked:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{callback:function(v){return "R$ "+v.toLocaleString("pt-BR");}}},
+          x:{stacked:true,grid:{display:false}}
+        }
+      }
+    });
+  }
+}
 window.exportRelPDF = function(){
   var pw=window.open("","_blank");
   if(!pw)return;
