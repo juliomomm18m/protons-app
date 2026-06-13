@@ -1934,6 +1934,13 @@ window.syncTimeInput = function(id){
 const _origSv = window.sv || function(id,v){const el=document.getElementById(id);if(el)el.value=v||'';};
 window.sv = function(id, val){
   _origSv(id, val);
+  // Update static display if select is locked
+  if(id==='tas'||id==='tae'){
+    var disp = document.getElementById(id+'-display');
+    if(disp && disp.style.display !== 'none'){
+      disp.textContent = val || '--:--';
+    }
+  }
   if((id==='tas'||id==='tae') && val){
     const parts = val.split(':');
     if(parts.length>=2){
@@ -1963,15 +1970,45 @@ window.lockTimeSelect = function(id, locked){
   const hSel = document.getElementById(id+'-h');
   const mSel = document.getElementById(id+'-m');
   const wrapper = document.getElementById(id+'-wrapper');
+  const hiddenInput = document.getElementById(id);
   if(!hSel) return;
-  // Use pointer-events instead of disabled so the value still displays correctly
-  // and sv() can still update it programmatically via "Agora" button
+
   hSel.disabled = locked;
   mSel.disabled = locked;
+  hSel.tabIndex = locked ? -1 : 0;
+  mSel.tabIndex = locked ? -1 : 0;
+
   if(wrapper){
-    wrapper.style.opacity = locked ? '0.6' : '1';
+    wrapper.style.opacity = locked ? '0.45' : '1';
     wrapper.style.pointerEvents = locked ? 'none' : 'auto';
-    wrapper.title = locked ? 'Use o botão 🕐 Agora para registrar' : '';
+    wrapper.style.userSelect = locked ? 'none' : 'auto';
+    // Show/hide static display
+    var displayId = id+'-display';
+    var existing = document.getElementById(displayId);
+    if(locked){
+      // Hide selects, show static label
+      hSel.style.display = 'none';
+      mSel.style.display = 'none';
+      wrapper.querySelector('span') && (wrapper.querySelector('span').style.display = 'none');
+      if(!existing){
+        var disp = document.createElement('div');
+        disp.id = displayId;
+        var val = hiddenInput ? hiddenInput.value : '';
+        disp.textContent = val || '--:--';
+        disp.style.cssText = 'font-size:32px;font-weight:800;font-family:JetBrains Mono,monospace;text-align:center;width:100%;padding:6px 0;opacity:0.5;';
+        wrapper.appendChild(disp);
+      } else {
+        var val = hiddenInput ? hiddenInput.value : '';
+        existing.textContent = val || '--:--';
+        existing.style.display = '';
+      }
+    } else {
+      // Show selects, hide static label
+      hSel.style.display = '';
+      mSel.style.display = '';
+      wrapper.querySelector('span') && (wrapper.querySelector('span').style.display = '');
+      if(existing) existing.style.display = 'none';
+    }
   }
 };
 
@@ -2078,6 +2115,9 @@ window.openTime=function(id){
   // Reset mark-done checkbox
   const mkDone = document.getElementById("t-mark-done"); if(mkDone) mkDone.checked=false;
 
+  // Inicializa os selects ANTES de aplicar o bloqueio
+  initTimeSelects();
+
   // Para técnicos: bloqueio inteligente baseado no estado da sessão
   // - Sem sessão aberta hoje: libera início, bloqueia término
   // - Com sessão aberta (início já salvo): bloqueia início, libera término
@@ -2085,8 +2125,8 @@ window.openTime=function(id){
   const fieldUser = isField();
   if(fieldUser){
     const startAlreadySaved = !!openSess;
-    lockTimeSelect("tas", startAlreadySaved);          // início: bloqueado se já salvo
-    lockTimeSelect("tae", !startAlreadySaved);         // término: bloqueado até ter início salvo
+    lockTimeSelect("tas", startAlreadySaved);   // início: bloqueado se já salvo
+    lockTimeSelect("tae", !startAlreadySaved);  // término: bloqueado até ter início salvo
   } else {
     lockTimeSelect("tas", false);
     lockTimeSelect("tae", false);
@@ -2108,7 +2148,6 @@ window.openTime=function(id){
   }
 
   updTDur();
-  initTimeSelects();
   showModal("tm");
 };
 window.setView=function(v){
