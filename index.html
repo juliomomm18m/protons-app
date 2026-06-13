@@ -525,32 +525,6 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
   </div>
 </div>
 
-<!-- NOTIFICATION BELL + PANEL -->
-<div id="notif-panel" class="backdrop" style="display:none;">
-<div class="modal" style="max-width:400px;">
-  <div class="mhdr">
-    <div><div style="font-size:15px;font-weight:800;color:#1A2C7A;">🔔 Notificações</div>
-    <div style="font-size:10px;color:#8A95A8;margin-top:2px;">Atividades em tempo real</div></div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <button onclick="clearNotifs()" style="font-size:11px;color:#8A95A8;background:none;border:none;cursor:pointer;">Limpar</button>
-      <button onclick="closeM('notif-panel')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
-    </div>
-  </div>
-  <div class="mbdy" id="notif-list" style="display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow-y:auto;"></div>
-</div></div>
-
-<!-- FLOATING NOTIFICATION -->
-<div id="float-notif" style="display:none;position:fixed;bottom:24px;right:20px;z-index:500;max-width:320px;background:linear-gradient(135deg,#1A2C7A,#1E6FBF);color:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 8px 32px rgba(26,44,122,.4);animation:slideUp .3s ease;">
-  <div style="display:flex;align-items:center;gap:10px;">
-    <div id="float-notif-icon" style="font-size:22px;flex-shrink:0;"></div>
-    <div>
-      <div id="float-notif-title" style="font-size:12px;font-weight:700;"></div>
-      <div id="float-notif-body" style="font-size:11px;opacity:.85;margin-top:2px;"></div>
-    </div>
-    <button onclick="document.getElementById('float-notif').style.display='none'" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;flex-shrink:0;margin-left:auto;">×</button>
-  </div>
-</div>
-
 <!-- FLOATING NOTIFICATION -->
 <div id="float-notif" style="display:none;position:fixed;top:80px;right:16px;z-index:500;max-width:320px;min-width:260px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:14px 16px;animation:slideInRight .3s ease;">
   <div style="display:flex;align-items:flex-start;gap:10px;">
@@ -1612,13 +1586,19 @@ window.saveOS=async function(){
   const cl=gv("fc").trim(),ad=gv("fa").trim(),co=gv("fct").trim();
   if(!cl||!ad||!co){toast("Preencha cliente, endereço e contato",false);return;}
   const serv=gv("fs"),tp=gv("ft");
-  // Generate sequential OS number
-  const existingNums = orders.map(o=>{
-    const n = parseInt((o.osNumber||"OS-000").replace("OS-",""));
-    return isNaN(n)?0:n;
-  });
-  const nextNum = existingNums.length>0 ? Math.max(...existingNums)+1 : 1;
-  const osNumber = "OS-"+String(nextNum).padStart(3,"0");
+  // Generate sequential OS number (only for new OS, not edits)
+  let osNumber;
+  if(editId){
+    const existing = orders.find(x=>x.id===editId);
+    osNumber = existing&&existing.osNumber ? existing.osNumber : ("OS-"+editId.slice(-3).toUpperCase());
+  } else {
+    const existingNums = orders.map(o=>{
+      const n = parseInt((o.osNumber||"OS-000").replace("OS-",""));
+      return isNaN(n)?0:n;
+    });
+    const nextNum = existingNums.length>0 ? Math.max(...existingNums)+1 : 1;
+    osNumber = "OS-"+String(nextNum).padStart(3,"0");
+  }
 
   const data={type:tp,client:cl,address:ad,contact:co,service:serv,priority:gv("fp"),status:gv("fst"),
     team:gv("fte")||null,helper:needsH(serv,tp)?(gv("fh")||null):null,
@@ -2017,10 +1997,59 @@ window.openEdit=function(id){
 window.openTime=function(id){
   const o=orders.find(x=>x.id===id);if(!o)return;
   timeId=id;g("tm-sub").textContent=`${o.osNumber||o.id||id} · ${o.client}`;
-  sv("tas",o.actualStart);sv("tae",o.actualEnd);
+
+  // Set today's date label
+  const todayLabel = new Date().toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"short"});
+  const dtEl = g("tm-date-label"); if(dtEl) dtEl.textContent = todayLabel;
+
+  // Populate exec log history
+  const logList = g("tm-log-list");
+  const logPanel = g("tm-exec-log");
+  const totalEl = g("tm-total");
+  const addHint = g("tm-add-session");
+  const execLog = o.execLog||[];
+  const today2 = tstr();
+  if(logList && execLog.length>0){
+    logPanel.style.display="block";
+    let logHtml="";
+    execLog.forEach(function(e){
+      const dur = e.start&&e.end ? calcDur(e.start,e.end) : "em aberto";
+      const isTod = e.date===today2;
+      logHtml+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #DDE1EC;font-size:11px;">
+        <span style="color:${isTod?"#1A9E4A":"#8A95A8"};font-weight:${isTod?"700":"400"}">${e.date||"?"}</span>
+        <span style="font-family:JetBrains Mono,monospace;color:#1A2340">${e.start||"?"} – ${e.end||"?"}</span>
+        <span style="color:#1E6FBF;font-weight:600">${dur||"—"}</span>
+      </div>`;
+    });
+    logList.innerHTML = logHtml;
+    const totalMins2 = execLog.reduce(function(acc,e){
+      if(e.start&&e.end){ const[sh,sm]=e.start.split(":").map(Number),[eh,em]=e.end.split(":").map(Number); return acc+(eh*60+em)-(sh*60+sm); }
+      return acc;
+    },0);
+    if(totalEl) totalEl.textContent = "Total acumulado: " + (totalMins2>=60?Math.floor(totalMins2/60)+"h "+(totalMins2%60?""+totalMins2%60+"min":""):totalMins2+"min");
+  } else if(logPanel) {
+    logPanel.style.display="none";
+  }
+
+  // Show add-session hint if today already has a closed session
+  const todayClosed = execLog.filter(e=>e.date===today2&&e.start&&e.end);
+  if(addHint){
+    if(todayClosed.length>0){ addHint.style.display="block"; addHint.textContent="➕ Adicionar mais um período de hoje"; }
+    else addHint.style.display="none";
+  }
+
+  // Pre-fill times from today's open session if any
+  const openSess = execLog.find(e=>e.date===today2&&e.start&&!e.end);
+  if(openSess){ sv("tas",openSess.start); sv("tae",""); }
+  else { sv("tas",""); sv("tae",""); }
+
   const ref=g("tm-ref");
   if(o.scheduledStart){ref.style.display="block";ref.textContent=`📅 Previsto: ${o.scheduledStart} – ${o.scheduledEnd||"?"}${o.scheduledDate?" em "+o.scheduledDate:""}`;}
   else ref.style.display="none";
+
+  // Reset mark-done checkbox
+  const mkDone = document.getElementById("t-mark-done"); if(mkDone) mkDone.checked=false;
+
   updTDur();
   initTimeSelects();
   showModal("tm");
@@ -2153,6 +2182,9 @@ window.saveCli = async function(){
     contractObs:      isGestor ? (document.getElementById("cli-contract-obs").value||null) : null,
     updatedBy: userProfile?userProfile.name:"",
   };
+  // Compute fullAddress for quick access when creating OS
+  const parts = [data.street, data.hood, data.city, data.state].filter(Boolean);
+  data.fullAddress = parts.join(", ");
   try{
     if(editCliId){
       await updateDoc(doc(db,"clientes",editCliId),{...data,updatedAt:serverTimestamp()});
@@ -3008,6 +3040,8 @@ window.render = function render(){
       else if(fn==="new")openNew(id);
       else if(fn==="goto"){setView("ordens");openEdit(id);}
       else if(fn==="sol-os"||fn==="sol-del")solAction(fn,id);
+    });
+  });
 
   // Relatórios filter buttons
   const relPeriodBtns = mc.querySelectorAll(".rel-period-btn");
@@ -3017,11 +3051,6 @@ window.render = function render(){
   const relTechBtns = mc.querySelectorAll(".rel-tech-btn");
   relTechBtns.forEach(function(btn){
     btn.addEventListener("click",function(){ window._relTech=this.dataset.tech; render(); });
-  });
-
-  // Init charts if on relatorios view
-
-    });
   });
 }
 
@@ -3036,6 +3065,7 @@ function rDash(){
   for(const[l,v,c,i] of[["Total OS",tot,"#1A2C7A","📋"],["Aguardando",w,"#8A95A8","⏳"],["Em Andamento",ip,"#1E6FBF","⚙️"],["Concluídas",dn,"#1A9E4A","✅"],["Críticas",cr,"#E03030","🚨"]]){
     h+=`<div class="card" style="border-top:3px solid ${c}"><div style="font-size:24px;margin-bottom:8px">${i}</div><div style="font-size:32px;font-weight:800;color:${c};font-family:JetBrains Mono,monospace;line-height:1">${v}</div><div style="font-size:11px;color:#8A95A8;text-transform:uppercase;letter-spacing:.8px;margin-top:6px;font-weight:600">${l}</div></div>`;
   }
+  h+=`</div>`; // close g5
   // Financial block — admin only
   if(isAdmin()){
     const contratoClients = clientes.filter(c=>c.ctype==="contrato"&&c.monthly);
@@ -3221,7 +3251,7 @@ function rOrdens(){
     }
   }
   h+=`<div class="filters">
-    <input type="text" placeholder="🔍 Buscar..." value="${search}" oninput="window.search=this.value;window.render()" value="${window.search||''}"/>
+    <input type="text" placeholder="🔍 Buscar..." value="${window.search||''}" oninput="window.search=this.value;window.render()"/>
     ${!isField()?`
     <select onchange="window.fSt=this.value;window.render()" style="font-family:'Syne',sans-serif;">
       <option value="Todos" ${window.fSt==="Todos"?"selected":""}>Todos</option>
@@ -3438,7 +3468,7 @@ onAuthStateChanged(auth, user => {
     userProfile = USERS[user.email] || { role:"tecnico", name:user.email, team:null };
     g("loading").style.display="none";
     g("login-screen").style.display="none";
-    showModal("app");
+    g("app").style.display="flex";
     g("user-name").textContent = userProfile.name;
     g("user-role").textContent = userProfile.role === "gestor" ? "Gestor" : userProfile.role === "tecnico" ? "Técnico" : "Ajudante";
     // Role label
@@ -3452,10 +3482,11 @@ onAuthStateChanged(auth, user => {
     g("nav-orcamentos").style.display = field ? "none" : "";
     g("nav-clientes").style.display   = field ? "none" : "";
     const relBtn = document.getElementById("nav-relatorios");
-    if(relBtn) relBtn.style.display = isAdmin() ? "block" : "none";
+    if(relBtn) relBtn.style.display = isGestorOrAdmin() ? "block" : "none";
 
-    // If field user, force ordens view
+    // If field user, force ordens view; otherwise dashboard
     if(field) setView("ordens");
+    else render();
 
     // Buttons
     const isMobile = window.innerWidth <= 768;
@@ -3534,8 +3565,11 @@ onAuthStateChanged(auth, user => {
   } else {
     currentUser = null;
     userProfile = null;
-    orders = [];
+    orders = []; solicitacoes = []; orcamentos = []; clientes = [];
     if (unsubOrders) { unsubOrders(); unsubOrders = null; }
+    if (unsubSol)    { unsubSol();    unsubSol    = null; }
+    if (unsubCli)    { unsubCli();    unsubCli    = null; }
+    if (unsubOrc)    { unsubOrc();    unsubOrc    = null; }
     g("loading").style.display="none";
     g("app").style.display="none";
     showModal("login-screen");
@@ -3707,7 +3741,7 @@ function updateDrawer(){
   const field = isField();
   // Nav items
   const relBtn = document.getElementById("dnav-relatorios");
-  if(relBtn) relBtn.style.display = isAdmin() ? "flex" : "none";
+  if(relBtn) relBtn.style.display = isGestorOrAdmin() ? "flex" : "none";
   ["dnav-dashboard","dnav-calendario","dnav-orcamentos","dnav-clientes"].forEach(id=>{
     const btn = document.getElementById(id);
     if(btn) btn.style.display = field ? "none" : "flex";
@@ -3907,7 +3941,7 @@ function inDR(ds,s,e){if(!ds)return false;var d=new Date(ds+"T12:00:00");return 
 function m2s(m){if(!m||m<=0)return "0min";return m>=60?Math.floor(m/60)+"h"+(m%60?" "+m%60+"min":""):m+"min";}
 
 function rRelatorios(){
-  if(!isAdmin())return "<div style='text-align:center;padding:60px;color:#8A95A8'>Acesso restrito a administradores</div>";
+  if(!isGestorOrAdmin())return "<div style='text-align:center;padding:60px;color:#8A95A8'>Acesso restrito a gestores e administradores</div>";
   var p=window._relPeriod||"mensal";
   var tf=window._relTech||"todos";
   var r=getDR(p);
@@ -4058,6 +4092,11 @@ function rRelatorios(){
 
   h+="</div>";
 
+  // Chart 5: KM por técnico
+  h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px'>";
+  h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px'>🚗 KM Rodado por Técnico</div>";
+  h+="<canvas id='chart-km' height='120'></canvas></div>";
+
   // ── PER TECH CARDS ────────────────────────────────────────────────────
   h+="<div style='display:flex;flex-direction:column;gap:16px'>";
   stats.forEach(function(ts){
@@ -4085,7 +4124,7 @@ function rRelatorios(){
   window._relStats = stats;
   window._relOrders = orders;
   window._relClientes = clientes;
-  window._relPeriodVal = p;
+  window._relPeriod = p; window._relPeriodVal = p; // compat
   return h;
 }
 
@@ -4180,7 +4219,7 @@ window.initRelCharts = function initRelCharts(){
     var now4=new Date();
     for(var mi=5;mi>=0;mi--){
       var d4=new Date(now4.getFullYear(),now4.getMonth()-mi,1);
-      var key4=d4.getFullYear()+"-"+(d4.getMonth()+1<10?"0":"")+(d4.getMonth()+1);
+      var key4=d4.getFullYear()+"-"+p(d4.getMonth()+1);
       var label4=d4.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"});
       var rev4=clientes.filter(function(c){return(c.ctype==="contrato"||c.ctype==="aluguel")&&c.monthly;})
         .reduce(function(sum,c){return sum+((c.payments&&c.payments[key4])?(c.monthly||0):0);},0);
@@ -4195,6 +4234,52 @@ window.initRelCharts = function initRelCharts(){
         y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{callback:function(v){return"R$ "+v.toLocaleString("pt-BR");}}},
         x:{grid:{display:false}}
       }}
+    });
+  }
+}
+
+  // 5. KM por técnico
+  var ctx5 = document.getElementById("chart-km");
+  if(ctx5){
+    var r5=getDR(window._relPeriod||"mensal"); var s5=r5.s, e5=r5.e;
+    var kmLabels=[], kmVals=[], kmColors=[];
+    Object.keys(TEAMS).forEach(function(tid){
+      var t=TEAMS[tid];
+      var techOrders=orders.filter(function(o){
+        return o.team===tid && (o.execLog||[]).some(function(ex){return inDR(ex.date,s5,e5);});
+      });
+      var totalKm=techOrders.reduce(function(sum,o){ return sum+(o.dispRound||0); },0);
+      kmLabels.push(t.tech);
+      kmVals.push(Math.round(totalKm*10)/10);
+      kmColors.push(t.color);
+    });
+    _chartInstances['km'] = new Chart(ctx5,{
+      type:"bar",
+      data:{
+        labels:kmLabels,
+        datasets:[{
+          label:"KM (ida e volta)",
+          data:kmVals,
+          backgroundColor:kmColors,
+          borderRadius:8,
+          borderWidth:0
+        }]
+      },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:function(c){return c.raw+" km";}}}
+        },
+        scales:{
+          y:{
+            beginAtZero:true,
+            grid:{color:"rgba(0,0,0,.05)"},
+            ticks:{callback:function(v){return v+" km";}}
+          },
+          x:{grid:{display:false}}
+        }
+      }
     });
   }
 }
