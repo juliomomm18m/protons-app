@@ -3165,6 +3165,21 @@ function renderOSCard(o, t, sc, pc, up){
   </div>`;
 }
 
+// renderSearch: re-renders only the OS list without destroying the search input focus
+window.renderSearch = function(inputEl){
+  var val = inputEl.value;
+  var pos = inputEl.selectionStart;
+  window.search = val;
+  // Re-render full (needed for correct list), then restore focus
+  window.render();
+  // Restore focus and cursor position after render rebuilds the DOM
+  var newInput = document.querySelector('.filters input[type="text"]');
+  if(newInput){
+    newInput.focus();
+    try{ newInput.setSelectionRange(pos, pos); } catch(e){}
+  }
+};
+
 window.render = function render(){
   const mc=g("mc");
   mc.style.overflowX = "hidden";
@@ -3442,7 +3457,7 @@ function rOrdens(){
     }
   }
   h+=`<div class="filters">
-    <input type="text" placeholder="🔍 Buscar..." value="${window.search||''}" oninput="window.search=this.value;window.render()"/>
+    <input type="text" placeholder="🔍 Buscar..." value="${window.search||''}" oninput="window.search=this.value;window.renderSearch(this)"/>
     ${!isField()?`
     <select onchange="window.fSt=this.value;window.render()" style="font-family:'Syne',sans-serif;">
       <option value="Todos" ${window.fSt==="Todos"?"selected":""}>Todos</option>
