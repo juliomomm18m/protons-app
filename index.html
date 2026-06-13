@@ -887,6 +887,8 @@ let currentUser = null;
 let userProfile = null;
 let unsubOrders = null;
 let orders=[],editId=null,timeId=null,view="dashboard";
+let _renderTimer = null;
+function debouncedRender(){ clearTimeout(_renderTimer); _renderTimer = setTimeout(function(){ render(); }, 80); }
 let calY=new Date().getFullYear(),calM=new Date().getMonth(),selDate=tstr();
 window.sortBy="priority";window.fSt="Todos";window.fTe="Todas";window.fPr="Todas";window.search="";
 
@@ -951,8 +953,8 @@ function canEdit(o){
 }
 function canTime(o){
   if(!userProfile) return false;
-  // Only admin and tecnico can register times
-  if(isAdmin()) return true;
+  // Admin and gestor can register times on any OS
+  if(isGestorOrAdmin()) return true;
   // Ajudantes cannot register times
   if(userProfile.role==="ajudante") return false;
   // Field users cannot register time on concluded OS
@@ -1412,6 +1414,45 @@ window.openOsDetail = function(id){
     body+=`</div></div>`;
   }
 
+  // ── Mão de obra & Deslocamento ──
+  if(o.laborTotal || o.dispKm){
+    body += `<div style="background:#F8F9FC;border:1px solid #DDE1EC;border-radius:10px;padding:14px;">
+    <div style="font-size:10px;color:#1A2C7A;font-weight:700;text-transform:uppercase;margin-bottom:10px;letter-spacing:.8px;">💰 Valores</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;">
+      ${o.laborTotal?`<div style="background:#EDFBF3;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:9px;color:#1A9E4A;font-weight:700;text-transform:uppercase;margin-bottom:4px">Mão de obra</div>
+        <div style="font-size:16px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace">R$ ${(o.laborTotal||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}</div>
+      </div>`:""}
+      ${o.dispKm?`<div style="background:#EEF5FF;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:9px;color:#1E6FBF;font-weight:700;text-transform:uppercase;margin-bottom:4px">Deslocamento</div>
+        <div style="font-size:16px;font-weight:800;color:#1E6FBF;font-family:JetBrains Mono,monospace">${o.dispRound||o.dispKm} km</div>
+        ${o.dispValue?`<div style="font-size:10px;color:#8A95A8;margin-top:2px">R$ ${(o.dispValue||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}</div>`:""}
+      </div>`:""}
+    </div></div>`;
+  }
+
+  // ── Fotos das observações ──
+  if(o.obsPhotos && o.obsPhotos.length>0){
+    body += `<div style="background:#F8F9FC;border:1px solid #DDE1EC;border-radius:10px;padding:14px;">
+    <div style="font-size:10px;color:#1A2C7A;font-weight:700;text-transform:uppercase;margin-bottom:10px;letter-spacing:.8px;">📷 Fotos (${o.obsPhotos.length})</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;">
+    ${o.obsPhotos.map(ph=>`<img src="${ph.data}" onclick="openPhotoFull('${ph.data}')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #DDE1EC;" title="${ph.author||""} - ${ph.date||""}">`).join("")}
+    </div></div>`;
+  }
+
+  // ── Histórico de alterações ──
+  if(o.changeLog && o.changeLog.length>0){
+    body += `<div style="background:#F8F9FC;border:1px solid #DDE1EC;border-radius:10px;padding:14px;">
+    <div style="font-size:10px;color:#1A2C7A;font-weight:700;text-transform:uppercase;margin-bottom:10px;letter-spacing:.8px;">🔄 Histórico de Alterações</div>`;
+    [...o.changeLog].reverse().forEach(function(entry){
+      body += `<div style="padding:8px 0;border-bottom:1px solid #EEE;">
+        <div style="font-size:10px;color:#8A95A8;margin-bottom:4px;">${entry.date||""} · <span style="color:#1A2C7A;font-weight:600">${entry.author||""}</span></div>
+        ${(entry.changes||[]).map(c=>`<div style="font-size:11px;color:#1A2340;">• ${c}</div>`).join("")}
+      </div>`;
+    });
+    body += `</div>`;
+  }
+
   document.getElementById("osd-body").innerHTML = body;
   showModal("os-detail");
 };
@@ -1509,8 +1550,17 @@ window.saveObs = async function(){
   const author = userProfile?userProfile.name:"";
   const newNote = `[${now} - ${author}] ${text}`;
   const fullNotes = o.notes ? o.notes+"\n"+newNote : newNote;
-  await updateDoc(doc(db,"ordens",obsTargetId),{notes:fullNotes});
+  // Save photos along with note
+  const obsPhotos = (window._obsPhotos||[]).map(p=>({
+    data: p.data, name: p.name,
+    author: author, date: now
+  }));
+  const existingObs = o.obsPhotos ? [...o.obsPhotos] : [];
+  const updateData = {notes:fullNotes};
+  if(obsPhotos.length>0) updateData.obsPhotos = [...existingObs, ...obsPhotos];
+  await updateDoc(doc(db,"ordens",obsTargetId), updateData);
   toast("Observação salva ✓");
+  window._obsPhotos = [];
   closeM("obs-modal");
 };
 
@@ -1606,7 +1656,7 @@ window.saveOS=async function(){
   }
 
   const data={type:tp,client:cl,address:ad,contact:co,service:serv,priority:gv("fp"),status:gv("fst"),
-    team:gv("fte")||null,helper:needsH(serv,tp)?(gv("fh")||null):null,
+    team:gv("fte")||null,helper:editId ? (gv("fh")||null) : (needsH(serv,tp)?(gv("fh")||null):null),
     scheduledDate:gv("fsd")||null,scheduledStart:gv("fss")||null,scheduledEnd:gv("fse")||null,
     actualStart:gv("fas")||null,actualEnd:gv("fae")||null,notes:gv("fn")||null,
     createdBy:userProfile?userProfile.name:"Sistema",
@@ -1719,6 +1769,12 @@ window.saveTime=async function(){
       totalMins+=(eh*60+em)-(sh*60+sm);
     }
   });
+
+  // Server-side guard: cannot mark done without end time
+  if(markDone && !ae){
+    toast("Registre o horário de término antes de concluir",false);
+    return;
+  }
 
   let st = o.status;
   if(markDone) st="Concluída";
@@ -2374,7 +2430,10 @@ window.openCliDetail = function(id){
           <div style="font-size:10px;color:#8A95A8;margin-top:2px">${paidThisMonth?"Pago em "+paidThisMonth:"Aguardando pagamento"}</div>
         </div>
         ${paidThisMonth
-          ?`<span style="font-size:11px;color:#1A9E4A;font-weight:700;background:#EDFBF3;padding:4px 10px;border-radius:6px;">✅ Pago</span>`
+          ?`<div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;color:#1A9E4A;font-weight:700;background:#EDFBF3;padding:4px 10px;border-radius:6px;">✅ Pago em ${paidThisMonth}</span>
+              <button onclick="unmarkPaid('${c.id}','${currentMonth}')" style="padding:4px 8px;border-radius:6px;border:1px solid #DDE1EC;background:#fff;color:#E03030;cursor:pointer;font-size:10px;font-weight:700;" title="Desfazer pagamento">✕</button>
+            </div>`
           :`<button onclick="markPaid('${c.id}')" style="padding:6px 14px;border-radius:7px;border:none;background:linear-gradient(135deg,#1A9E4A,#0F7A36);color:#fff;cursor:pointer;font-size:11px;font-weight:700;">✅ Marcar como Pago</button>`
         }
       </div>
@@ -2456,6 +2515,16 @@ window.markPaid = async function(id){
   openCliDetail(id);
 };
 
+window.unmarkPaid = async function(id, key){
+  if(!confirm("Desmarcar pagamento de "+key+"?")) return;
+  const c = clientes.find(x=>x.id===id); if(!c) return;
+  const payments = {...(c.payments||{})};
+  delete payments[key];
+  await updateDoc(doc(db,"clientes",id),{payments});
+  toast("Pagamento desmarcado");
+  openCliDetail(id);
+};
+
 // Check contract expiry alerts on load
 function checkContractAlerts(){
   const today2 = new Date();
@@ -2470,8 +2539,8 @@ function checkContractAlerts(){
   // Send WhatsApp alert once per day
   if(expiring.length>0 && isAdmin()){
     const alertKey = "contractAlert_"+today2.toISOString().split("T")[0];
-    if(!sessionStorage.getItem(alertKey)){
-      sessionStorage.setItem(alertKey,"1");
+    if(!localStorage.getItem(alertKey)){
+      localStorage.setItem(alertKey,"1");
       const names = expiring.map(c=>encodeURIComponent("- "+c.name+" - vence "+c.contractEnd)).join("%0A");
       const msg = encodeURIComponent("PROTONS OS - Contratos Vencendo")+"%0A%0A"+names+"%0A%0A"+encodeURIComponent("Acesse o sistema para renovar.");
       // Auto-open whatsapp notification
@@ -3270,10 +3339,22 @@ function rOrdens(){
   let fieldDates = null;
   if(userProfile && userProfile.role==="tecnico"){
     fieldDates = getFieldDates();
-    baseOrders = orders.filter(o=>o.team===userProfile.team && fieldDates.dates.includes(o.scheduledDate));
+    baseOrders = orders.filter(o=>
+      o.team===userProfile.team && (
+        // OS agendadas para hoje ou amanhã
+        fieldDates.dates.includes(o.scheduledDate) ||
+        // OU OS em andamento (independente de data) — não podem desaparecer
+        o.status==="Em Andamento"
+      )
+    );
   } else if(userProfile && userProfile.role==="ajudante"){
     fieldDates = getFieldDates();
-    baseOrders = orders.filter(o=>o.helper===userProfile.name && fieldDates.dates.includes(o.scheduledDate));
+    baseOrders = orders.filter(o=>
+      o.helper===userProfile.name && (
+        fieldDates.dates.includes(o.scheduledDate) ||
+        o.status==="Em Andamento"
+      )
+    );
   }
   let list=baseOrders.filter(o=>fSt==="Todos"||o.status===fSt).filter(o=>fTe==="Todas"||o.team===fTe)
     .filter(o=>fPr==="Todas"||o.priority===fPr)
@@ -3607,7 +3688,7 @@ onAuthStateChanged(auth, user => {
     unsubOrders = onSnapshot(col, snap => {
       orders = snap.docs.map(d=>({id:d.id,...d.data()}));
       if(typeof checkOSNotifications==="function") checkOSNotifications();
-      render();
+      debouncedRender();
     });
     if (unsubSol) unsubSol();
     unsubSol = onSnapshot(colSol, snap => {
@@ -3642,7 +3723,7 @@ onAuthStateChanged(auth, user => {
     unsubCli = onSnapshot(colCli, snap => {
       clientes = snap.docs.map(d=>({id:d.id,...d.data()}));
       checkContractAlerts();
-      render();
+      debouncedRender();
     });
     if (unsubOrc) unsubOrc();
     unsubOrc = onSnapshot(colOrc, snap => {
