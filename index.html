@@ -4322,361 +4322,185 @@ function rRelatorios(){
   var atv=stats.reduce(function(a,b){return a+b.tv;},0);
   var aos=stats.reduce(function(a,b){return a+b.ol.length;},0);
 
-  var h="<div style='margin-bottom:20px'>";
-
-  // Build chart data
-  var last6months = [];
-  for(var mi=5;mi>=0;mi--){
-    var d2=new Date(); d2.setMonth(d2.getMonth()-mi);
-    last6months.push({
-      label: d2.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"}),
-      year: d2.getFullYear(), month: d2.getMonth()
-    });
-  }
-
-  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px'>";
-  h+="<div><div style='font-size:20px;font-weight:800;color:#1A2C7A'>Relatorio de Horas</div>";
-  h+="<div style='font-size:12px;color:#8A95A8;margin-top:2px'>"+(pl[p]||"")+"</div></div>";
-  h+="<button onclick='exportRelPDF()' style='padding:8px 16px;border-radius:8px;border:none;background:#E03030;color:#fff;cursor:pointer;font-size:12px;font-weight:700;'>Exportar PDF</button></div>";
-
-  h+="<div style='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px'>";
-  var pnames={diario:"Hoje",semanal:"Semana",mensal:"Mes",personalizado:"Personalizado"};
-  ["diario","semanal","mensal","personalizado"].forEach(function(pp){
-    var a=p===pp;
-    h+="<button class='rel-period-btn' data-period='"+pp+"' style='padding:7px 14px;border-radius:8px;border:1px solid "+(a?"#1A2C7A":"#DDE1EC")+";background:"+(a?"#E8EEFF":"#fff")+";color:"+(a?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+pnames[pp]+"</button>";
-  });
-  if(p==="personalizado"){
-    h+="<input type='date' value='"+(window._relCS||"")+"' onchange=\"window._relCS=this.value;render()\" style='padding:7px 10px;border-radius:8px;border:1px solid #DDE1EC;font-size:12px;outline:none;'/>";
-    h+="<input type='date' value='"+(window._relCE||"")+"' onchange=\"window._relCE=this.value;render()\" style='padding:7px 10px;border-radius:8px;border:1px solid #DDE1EC;font-size:12px;outline:none;'/>";
-  }
-  h+="</div>";
-
-  h+="<div style='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px'>";
-  h+="<button class='rel-tech-btn' data-tech='todos' style='padding:6px 12px;border-radius:7px;border:1px solid "+(tf==="todos"?"#1A2C7A":"#DDE1EC")+";background:"+(tf==="todos"?"#E8EEFF":"#fff")+";color:"+(tf==="todos"?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>Todos</button>";
-  Object.keys(TEAMS).forEach(function(tid){var t=TEAMS[tid];var a=tf===tid;h+="<button class='rel-tech-btn' data-tech='"+tid+"' style='padding:6px 12px;border-radius:7px;border:1px solid "+(a?t.color:"#DDE1EC")+";background:"+(a?t.color+"18":"#fff")+";color:"+(a?t.color:"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+t.tech+"</button>";});
-  ["Tiago","Ramon"].forEach(function(hn){var a=tf===hn;h+="<button class='rel-tech-btn' data-tech='"+hn+"' style='padding:6px 12px;border-radius:7px;border:1px solid "+(a?"#E8A000":"#DDE1EC")+";background:"+(a?"#FFFAEE":"#fff")+";color:"+(a?"#E8A000":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+hn+"</button>";});
-  h+="</div>";
-
-  h+="<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px'>";
-  h+="<div style='background:linear-gradient(135deg,#1A2C7A,#1E6FBF);border-radius:12px;padding:16px;text-align:center'><div style='font-size:10px;color:rgba(255,255,255,.7);text-transform:uppercase;font-weight:700;margin-bottom:6px'>Total Horas</div><div style='font-size:28px;font-weight:800;color:#fff;font-family:JetBrains Mono,monospace'>"+m2s(atm)+"</div></div>";
-  h+="<div style='background:#fff;border:1px solid #DDE1EC;border-radius:12px;padding:16px;text-align:center'><div style='font-size:10px;color:#8A95A8;text-transform:uppercase;font-weight:700;margin-bottom:6px'>OS Realizadas</div><div style='font-size:28px;font-weight:800;color:#1A2C7A;font-family:JetBrains Mono,monospace'>"+aos+"</div></div>";
-  h+="<div style='background:#fff;border:1px solid #DDE1EC;border-radius:12px;padding:16px;text-align:center'><div style='font-size:10px;color:#8A95A8;text-transform:uppercase;font-weight:700;margin-bottom:6px'>Valor Sugerido</div><div style='font-size:22px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace'>R$ "+atv.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</div></div>";
-  h+="</div>";
-
-  // ── CHARTS ──────────────────────────────────────────────────────────────
-  h+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px'>";
-
-  // Chart 1: OS by status (pie)
-  var statusCounts = {
-    "Aguardando": orders.filter(function(o){return o.status==="Aguardando";}).length,
-    "Em Andamento": orders.filter(function(o){return o.status==="Em Andamento";}).length,
-    "Concluída": orders.filter(function(o){return o.status==="Concluída";}).length,
-    "Cancelada": orders.filter(function(o){return o.status==="Cancelada";}).length
-  };
-  h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px'>";
-  h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px'>Distribuição por Status</div>";
-  h+="<canvas id='chart-status' height='200'></canvas></div>";
-
-  // Chart 2: OS by tech (bar)
-  h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px'>";
-  h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px'>OS por Técnico ("+({diario:"Hoje",semanal:"Semana",mensal:"Mês",personalizado:"Período"}[p]||"Período")+")</div>";
-  h+="<canvas id='chart-tech' height='200'></canvas></div>";
-
-  h+="</div>";
-
-  h+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px'>";
-
-  // Chart 3: Hours by day (line) - current period
-  var dayLabels=[], dayHours=[];
-  var firstTsDm = stats.length>0 ? (stats[0].dm||{}) : {};
-  Object.keys(firstTsDm).sort().forEach(function(dt){
-    dayLabels.push(new Date(dt+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}));
-    dayHours.push(parseFloat((firstTsDm[dt]/60).toFixed(1)));
-  });
-  // Merge all techs for the chart
-  var allDayMap={};
-  stats.forEach(function(ts2){
-    Object.keys(ts2.dm).forEach(function(dt){
-      allDayMap[dt]=(allDayMap[dt]||0)+ts2.dm[dt];
-    });
-  });
-  var allDayLabels=[], allDayVals=[];
-  Object.keys(allDayMap).sort().forEach(function(dt){
-    allDayLabels.push(new Date(dt+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}));
-    allDayVals.push(parseFloat((allDayMap[dt]/60).toFixed(1)));
-  });
-
-  h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px'>";
-  h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px'>Horas Trabalhadas por Dia</div>";
-  h+="<canvas id='chart-hours' height='200'></canvas></div>";
-
-  // Chart 4: Monthly revenue (last 6 months)
-  var monthRevLabels=[], monthRevVals=[];
-  last6months.forEach(function(m){
-    monthRevLabels.push(m.label);
-    var rev = clientes.filter(function(c){ return (c.ctype==="contrato"||c.ctype==="aluguel")&&c.monthly; })
-      .reduce(function(sum,c){
-        var key=m.year+"-"+(m.month+1<10?"0":"")+(m.month+1);
-        return sum + ((c.payments&&c.payments[key]) ? (c.monthly||0) : 0);
-      },0);
-    monthRevVals.push(rev);
-  });
-
-  h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px'>";
-  h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px'>Receita Paga (últimos 6 meses)</div>";
-  h+="<canvas id='chart-revenue' height='200'></canvas></div>";
-
-  h+="</div>";
-
-  // Chart 5: KM por técnico
-  h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px'>";
-  h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px'>🚗 KM Rodado por Técnico</div>";
-  h+="<canvas id='chart-km' height='120'></canvas></div>";
-
-
-  // ── TEMPO MÉDIO POR TIPO DE SERVIÇO ──────────────────────────────────
-  // Filters: _relSvcType (all/Nova Instalação/Manutenção), _relSvcTech (todos/equipe1/equipe2/equipe3)
+  // ── GLOBAL FILTER STATE ──────────────────────────────────────────────
   var svcTypeFilter = window._relSvcType || "todos";
-  var svcTechFilter = window._relSvcTech || "todos";
+  var selCharts = window._relSelCharts || {
+    status:true,tech:true,hours:true,revenue:false,
+    km:true,svcavg:false,taxa:false,revfull:true,cards:false
+  };
+  window._relSelCharts = selCharts;
 
-  // Build filter buttons HTML
-  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px'>";
-  h += "<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:14px;letter-spacing:.8px'>⏱ Tempo Médio por Tipo de Serviço</div>";
+  var h = "<div style='margin-bottom:20px'>";
 
-  // Filter row
-  h += "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center'>";
-  h += "<div style='font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-right:4px;'>Tipo:</div>";
-  ["todos","Nova Instalação","Manutenção"].forEach(function(tp){
-    var lbl = tp === "todos" ? "Todos" : tp;
-    var a = svcTypeFilter === tp;
-    h += "<button class='rel-period-btn' data-period='__svctype__"+tp+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?"#1A2C7A":"#DDE1EC")+";background:"+(a?"#E8EEFF":"#fff")+";color:"+(a?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+lbl+"</button>";
+  // ── UNIFIED FILTER BAR ───────────────────────────────────────────────
+  var periodLabels = {diario:"Hoje",semanal:"Semana",mensal:"Mês",personalizado:"Personalizado"};
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;'>";
+  h += "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;'><span style='font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8A95A8;font-weight:700;min-width:52px;'>Período</span>";
+  ["diario","semanal","mensal","personalizado"].forEach(function(pp){
+    var a=period===pp;
+    h += "<button class='rel-period-btn' data-period='"+pp+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?"#1A2C7A":"#DDE1EC")+";background:"+(a?"#E8EEFF":"transparent")+";color:"+(a?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+periodLabels[pp]+"</button>";
   });
-  h += "<div style='font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-left:8px;margin-right:4px;'>Técnico:</div>";
-  h += "<button class='rel-period-btn' data-period='__svctech__todos' style='padding:5px 12px;border-radius:7px;border:1px solid "+(svcTechFilter==="todos"?"#1A2C7A":"#DDE1EC")+";background:"+(svcTechFilter==="todos"?"#E8EEFF":"#fff")+";color:"+(svcTechFilter==="todos"?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>Todos</button>";
-  Object.keys(TEAMS).forEach(function(tid){
-    var t = TEAMS[tid]; var a = svcTechFilter === tid;
-    h += "<button class='rel-period-btn' data-period='__svctech__"+tid+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?t.color:"#DDE1EC")+";background:"+(a?t.color+"18":"#fff")+";color:"+(a?t.color:"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+t.tech+"</button>";
-  });
+  if(period==="personalizado"){
+    h += "<input type='date' value='"+(window._relCS||"")+"' onchange=\"window._relCS=this.value;render()\" style='padding:5px 8px;border-radius:7px;border:1px solid #DDE1EC;font-size:11px;outline:none;'/>";
+    h += "<input type='date' value='"+(window._relCE||"")+"' onchange=\"window._relCE=this.value;render()\" style='padding:5px 8px;border-radius:7px;border:1px solid #DDE1EC;font-size:11px;outline:none;'/>";
+  }
   h += "</div>";
 
-  // Compute avg duration per service type
-  var svcMap = {};
-  orders.filter(function(o){
-    if(o.status !== "Concluída") return false;
-    if(!o.totalMins || o.totalMins <= 0) return false;
-    if(svcTypeFilter !== "todos" && o.type !== svcTypeFilter) return false;
-    if(svcTechFilter !== "todos" && o.team !== svcTechFilter) return false;
-    return true;
-  }).forEach(function(o){
-    var key = (o.service||"Outros");
-    if(!svcMap[key]) svcMap[key] = {total:0, count:0};
-    svcMap[key].total += o.totalMins;
-    svcMap[key].count++;
+  h += "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;'><span style='font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8A95A8;font-weight:700;min-width:52px;'>Técnico</span>";
+  h += "<button class='rel-tech-btn' data-tech='todos' style='padding:5px 12px;border-radius:7px;border:1px solid "+(tf==="todos"?"#1A2C7A":"#DDE1EC")+";background:"+(tf==="todos"?"#E8EEFF":"transparent")+";color:"+(tf==="todos"?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>Todos</button>";
+  Object.keys(TEAMS).forEach(function(tid){var t=TEAMS[tid];var a=tf===tid;h += "<button class='rel-tech-btn' data-tech='"+tid+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?t.color:"#DDE1EC")+";background:"+(a?t.color+"18":"transparent")+";color:"+(a?t.color:"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+t.tech+"</button>";});
+  ["Tiago","Ramon"].forEach(function(hn){var a=tf===hn;h += "<button class='rel-tech-btn' data-tech='"+hn+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?"#E8A000":"#DDE1EC")+";background:"+(a?"#FFFAEE":"transparent")+";color:"+(a?"#E8A000":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+hn+"</button>";});
+  h += "</div>";
+
+  h += "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;'><span style='font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8A95A8;font-weight:700;min-width:52px;'>Tipo OS</span>";
+  [{v:"todos",l:"Todos"},{v:"Nova Instalação",l:"Nova Instalação"},{v:"Manutenção",l:"Manutenção"}].forEach(function(tp){
+    var a=svcTypeFilter===tp.v;
+    h += "<button class='rel-period-btn' data-period='__svctype__"+tp.v+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?"#1A2C7A":"#DDE1EC")+";background:"+(a?"#E8EEFF":"transparent")+";color:"+(a?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+tp.l+"</button>";
   });
+  h += "</div></div>";
 
-  var svcEntries = Object.entries(svcMap)
-    .map(function(e){ return {svc:e[0], avg:Math.round(e[1].total/e[1].count), count:e[1].count}; })
-    .sort(function(a,b){ return b.avg - a.avg; });
+  // ── KPI SUMMARY ──────────────────────────────────────────────────────
+  h += "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;'>";
+  h += "<div style='background:linear-gradient(135deg,#1A2C7A,#1E6FBF);border-radius:12px;padding:14px;text-align:center;'><div style='font-size:10px;color:rgba(255,255,255,.7);text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Total Horas</div><div style='font-size:26px;font-weight:800;color:#fff;font-family:JetBrains Mono,monospace;'>"+m2s(atm)+"</div></div>";
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;'><div style='font-size:10px;color:#8A95A8;text-transform:uppercase;font-weight:700;margin-bottom:4px;'>OS Realizadas</div><div style='font-size:26px;font-weight:800;color:#1A2C7A;font-family:JetBrains Mono,monospace;'>"+aos+"</div></div>";
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;'><div style='font-size:10px;color:#8A95A8;text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Valor Sugerido</div><div style='font-size:26px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace;'>R$ "+atv.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</div></div>";
+  h += "</div>";
 
-  if(svcEntries.length === 0){
-    h += "<div style='text-align:center;padding:30px;color:#8A95A8;font-size:13px;'>Sem OS concluídas com tempo registrado para este filtro</div>";
-  } else {
-    var maxAvg = svcEntries[0].avg || 1;
-    var barColors = ["#1A2C7A","#1E6FBF","#1A9E4A","#E8A000","#D45A1A","#E03030","#8A95A8","#6B48FF"];
-    h += "<canvas id='chart-svc-avg' height='160'></canvas>";
-    // Store data for chart init
-    // _svcAvgData set via window for chart init
-    window._svcAvgData = svcEntries.map(function(e,i){return {svc:e.svc,avg:e.avg,count:e.count,color:barColors[i%barColors.length]};});
-    // Summary table below chart
-    h += "<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:14px;'>";
-    svcEntries.forEach(function(e,i){
-      var col = barColors[i % barColors.length];
-      var avgStr = e.avg >= 60 ? Math.floor(e.avg/60)+"h"+(e.avg%60?" "+e.avg%60+"min":"") : e.avg+"min";
-      h += "<div style='background:#F8F9FC;border:1px solid #DDE1EC;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;'>";
-      h += "<div><div style='font-size:11px;font-weight:700;color:#1A2340;'>"+e.svc+"</div><div style='font-size:10px;color:#8A95A8;margin-top:2px;'>"+e.count+" OS</div></div>";
-      h += "<div style='font-size:15px;font-weight:800;color:"+col+";font-family:JetBrains Mono,monospace;'>"+avgStr+"</div>";
-      h += "</div>";
-    });
+  // ── CHART SELECTOR ───────────────────────────────────────────────────
+  var chartDefs = [
+    {id:"status", label:"Distribuição por status", sub:"Pizza"},
+    {id:"tech",   label:"OS por técnico",           sub:"Barras"},
+    {id:"hours",  label:"Horas por dia",            sub:"Linha"},
+    {id:"revenue",label:"Receita paga",             sub:"Barras 6 meses"},
+    {id:"km",     label:"KM por técnico",           sub:"Barras"},
+    {id:"svcavg", label:"Tempo médio por serviço",  sub:"Barras horizontais"},
+    {id:"taxa",   label:"Taxa de conclusão",        sub:"Gauge"},
+    {id:"revfull",label:"Receita consolidada",      sub:"Empilhadas 6m"},
+    {id:"cards",  label:"Cards por técnico",        sub:"Tabela detalhada"},
+  ];
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;'>";
+  h += "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;'>";
+  h += "<div style='font-size:12px;font-weight:700;color:var(--text);'>Selecionar para impressão</div>";
+  h += "<div style='display:flex;gap:8px;flex-wrap:wrap;'>";
+  h += "<button onclick=\"Object.keys(window._relSelCharts).forEach(function(k){window._relSelCharts[k]=true;});render();\" style='font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid #DDE1EC;background:transparent;color:#8A95A8;cursor:pointer;'>Todos</button>";
+  h += "<button onclick=\"Object.keys(window._relSelCharts).forEach(function(k){window._relSelCharts[k]=false;});render();\" style='font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid #DDE1EC;background:transparent;color:#8A95A8;cursor:pointer;'>Nenhum</button>";
+  h += "<button onclick=\"exportRelPDFSelected()\" style='padding:5px 14px;border-radius:7px;border:none;background:#E03030;color:#fff;cursor:pointer;font-size:11px;font-weight:700;'>🖨️ Imprimir</button>";
+  h += "</div></div>";
+  h += "<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:8px;'>";
+  chartDefs.forEach(function(cd){
+    var chk = selCharts[cd.id] ? "checked" : "";
+    h += "<label style='display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid #DDE1EC;cursor:pointer;'>";
+    h += "<input type='checkbox' "+chk+" onchange=\"window._relSelCharts['"+cd.id+"']=this.checked;\" style='accent-color:#1A2C7A;width:15px;height:15px;cursor:pointer;'/>";
+    h += "<div><div style='font-size:11px;font-weight:700;color:var(--text);'>"+cd.label+"</div><div style='font-size:10px;color:#8A95A8;margin-top:1px;'>"+cd.sub+"</div></div></label>";
+  });
+  h += "</div></div>";
+
+  // ── CHARTS — render only selected ────────────────────────────────────
+  h += "<div id='rel-charts-area'>";
+
+  if(selCharts.status || selCharts.tech){
+    h += "<div style='display:grid;grid-template-columns:"+(selCharts.status&&selCharts.tech?"1fr 1fr":"1fr")+";gap:16px;margin-bottom:24px;'>";
+    if(selCharts.status){h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;'><div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px;'>Distribuição por Status</div><canvas id='chart-status' height='200'></canvas></div>";}
+    if(selCharts.tech){h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;'><div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px;'>OS por Técnico</div><canvas id='chart-tech' height='200'></canvas></div>";}
     h += "</div>";
   }
-  h += "</div>";
-
-  // ── 1. TAXA DE CONCLUSÃO NO PRAZO ────────────────────────────────────
-  var osComSchedule = orders.filter(function(o){ return o.scheduledDate && o.status === "Concluída"; });
-  var onTime = 0, late = 0;
-  osComSchedule.forEach(function(o){
-    var lastExec = (o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});
-    if(!lastExec.length) return;
-    var lastDate = lastExec[lastExec.length-1].date;
-    if(lastDate <= o.scheduledDate) onTime++; else late++;
-  });
-  var total_sched = onTime + late;
-  var pct_ontime = total_sched > 0 ? Math.round(onTime/total_sched*100) : null;
-  var pct_late   = total_sched > 0 ? Math.round(late/total_sched*100) : null;
-  var gauge_color = pct_ontime===null ? "#8A95A8" : pct_ontime>=80 ? "#1A9E4A" : pct_ontime>=60 ? "#E8A000" : "#E03030";
-
-  // OS by service
-  var serviceMap = {};
-  orders.forEach(function(o){ if(!o.service) return; serviceMap[o.service]=(serviceMap[o.service]||0)+1; });
-  var serviceEntries = Object.entries(serviceMap).sort(function(a,b){return b[1]-a[1];});
-  var serviceColors = ["#1A2C7A","#1E6FBF","#1A9E4A","#E8A000","#D45A1A","#E03030","#8A95A8","#6B48FF"];
-  var totalServiceOS = orders.length || 1;
-
-  h += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px'>";
-
-  // Card: taxa de conclusão no prazo
-  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px'>";
-  h += "<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:16px;letter-spacing:.8px'>✅ Taxa de Conclusão no Prazo</div>";
-  if(pct_ontime === null){
-    h += "<div style='text-align:center;padding:20px 0;color:#8A95A8;font-size:13px'>Sem OS com data agendada concluída ainda</div>";
-  } else {
-    // Big gauge number
-    h += "<div style='text-align:center;margin-bottom:16px'>";
-    h += "<div style='font-size:52px;font-weight:800;color:"+gauge_color+";font-family:JetBrains Mono,monospace;line-height:1'>"+pct_ontime+"%</div>";
-    h += "<div style='font-size:12px;color:#8A95A8;margin-top:6px'>concluídas no prazo</div>";
-    h += "</div>";
-    // Progress bar
-    h += "<div style='background:#F0F2F7;border-radius:8px;height:10px;margin-bottom:12px;overflow:hidden'>";
-    h += "<div style='background:"+gauge_color+";width:"+pct_ontime+"%;height:100%;border-radius:8px;transition:width .5s'></div></div>";
-    // Stats row
-    h += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>";
-    h += "<div style='background:#EDFBF3;border-radius:8px;padding:10px;text-align:center'><div style='font-size:10px;color:#1A9E4A;font-weight:700;text-transform:uppercase'>No prazo</div><div style='font-size:20px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace'>"+onTime+"</div></div>";
-    h += "<div style='background:#FFF0F0;border-radius:8px;padding:10px;text-align:center'><div style='font-size:10px;color:#E03030;font-weight:700;text-transform:uppercase'>Atrasadas</div><div style='font-size:20px;font-weight:800;color:#E03030;font-family:JetBrains Mono,monospace'>"+late+"</div></div>";
-    h += "</div>";
-    h += "<div style='font-size:10px;color:#8A95A8;text-align:center;margin-top:8px'>Total: "+total_sched+" OS com data agendada concluídas</div>";
-  }
-
-  // Lista das OS atrasadas
-  if(late > 0){
-    var lateOS = osComSchedule.filter(function(o){
-      var lx = (o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});
-      if(!lx.length) return false;
-      return lx[lx.length-1].date > o.scheduledDate;
-    });
-    h += "<div style=\'margin-top:12px;border-top:1px solid #DDE1EC;padding-top:10px;\'>";
-    h += "<div style=\'font-size:10px;font-weight:700;text-transform:uppercase;color:#E03030;margin-bottom:8px;\'>⚠️ Concluídas com Atraso</div>";
-    lateOS.forEach(function(o){
-      var lx = (o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});
-      var execDate = lx[lx.length-1].date;
-      var dias = Math.round((new Date(execDate+"T12:00:00") - new Date(o.scheduledDate+"T12:00:00"))/(864e5));
-      var t2 = TEAMS[o.team];
-      h += "<div style=\'display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F0F2F7;\'>";
-      h += "<div><div style=\'font-size:12px;font-weight:700;color:#1A2340;\'>"+(o.osNumber||"OS")+" — "+(o.client||"")+"</div>";
-      h += "<div style=\'font-size:10px;color:#8A95A8;margin-top:1px;\'>Agendado "+o.scheduledDate+" · Realizado "+execDate+(t2?" · "+t2.tech:"")+"</div></div>";
-      h += "<span style=\'font-size:11px;font-weight:700;color:#E03030;background:#FFF0F0;padding:3px 8px;border-radius:5px;\'>+"+dias+"d</span>";
-      h += "</div>";
-    });
+  if(selCharts.hours || selCharts.revenue){
+    h += "<div style='display:grid;grid-template-columns:"+(selCharts.hours&&selCharts.revenue?"1fr 1fr":"1fr")+";gap:16px;margin-bottom:24px;'>";
+    if(selCharts.hours){h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;'><div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px;'>Horas Trabalhadas por Dia</div><canvas id='chart-hours' height='200'></canvas></div>";}
+    if(selCharts.revenue){h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;'><div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px;'>Receita Paga (últimos 6 meses)</div><canvas id='chart-revenue' height='200'></canvas></div>";}
     h += "</div>";
   }
-  h += "</div>";
-
-  // Card: OS por tipo de serviço
-  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px'>";
-  h += "<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px'>🔧 OS por Tipo de Serviço</div>";
-  if(serviceEntries.length === 0){
-    h += "<div style='text-align:center;padding:20px 0;color:#8A95A8;font-size:13px'>Sem dados</div>";
-  } else {
-    serviceEntries.forEach(function(entry, idx){
-      var svc = entry[0], cnt = entry[1];
-      var pct = Math.round(cnt/totalServiceOS*100);
-      var col = serviceColors[idx % serviceColors.length];
-      h += "<div style='margin-bottom:10px'>";
-      h += "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px'>";
-      h += "<div style='font-size:12px;font-weight:600;color:var(--text)'>"+svc+"</div>";
-      h += "<div style='display:flex;align-items:center;gap:8px'><span style='font-size:11px;color:#8A95A8'>"+cnt+" OS</span><span style='font-size:11px;font-weight:700;color:"+col+"'>"+pct+"%</span></div>";
-      h += "</div>";
-      h += "<div style='background:#F0F2F7;border-radius:4px;height:6px;overflow:hidden'>";
-      h += "<div style='background:"+col+";width:"+pct+"%;height:100%;border-radius:4px'></div></div></div>";
-    });
-  }
-  h += "</div>";
-  h += "</div>"; // close grid
-
-  // ── 2. RECEITA CONSOLIDADA ─────────────────────────────────────────────
-  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px'>";
-  h += "<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:16px;letter-spacing:.8px'>💰 Receita Consolidada — últimos 6 meses</div>";
-
-  var now6 = new Date();
-  var rev6months = [];
-  for(var mi6=5; mi6>=0; mi6--){
-    var d6 = new Date(now6.getFullYear(), now6.getMonth()-mi6, 1);
-    var key6 = d6.getFullYear()+"-"+p(d6.getMonth()+1);
-    var label6 = d6.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"});
-    // Contratos + alugueis pagos
-    var recorrente6 = clientes.filter(function(c){ return (c.ctype==="contrato"||c.ctype==="aluguel")&&c.monthly; })
-      .reduce(function(sum,c){ return sum + ((c.payments&&c.payments[key6]) ? (c.monthly||0) : 0); }, 0);
-    // Mão de obra OS concluídas no mês
-    var moStart6 = new Date(d6.getFullYear(), d6.getMonth(), 1);
-    var moEnd6   = new Date(d6.getFullYear(), d6.getMonth()+1, 0, 23, 59, 59);
-    var labor6 = orders.filter(function(o){ return o.status==="Concluída" && o.laborTotal > 0; })
-      .reduce(function(sum,o){
-        var hasInMonth = (o.execLog||[]).some(function(ex){ return inDR(ex.date, moStart6, moEnd6); });
-        return sum + (hasInMonth ? (o.laborTotal||0) : 0);
-      }, 0);
-    // Orçamentos aprovados/convertidos no mês
-    var orc6 = orcamentos.filter(function(orc){
-      if(orc.status!=="aprovado") return false;
-      if(!orc.createdAt) return false;
-      var dt = orc.createdAt.toDate ? orc.createdAt.toDate() : new Date(orc.createdAt);
-      return dt >= moStart6 && dt <= moEnd6;
-    }).reduce(function(sum,orc){ return sum + (orc.total||0); }, 0);
-    rev6months.push({label:label6, recorrente:recorrente6, labor:labor6, orc:orc6, total:recorrente6+labor6+orc6, key:key6, moStart:moStart6, moEnd:moEnd6});
+  if(selCharts.km){
+    h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px;'><div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px;'>🚗 KM Rodado por Técnico</div><canvas id='chart-km' height='120'></canvas></div>";
   }
 
-  // Summary totals
-  var totalRec6   = rev6months.reduce(function(s,m){return s+m.recorrente;},0);
-  var totalLab6   = rev6months.reduce(function(s,m){return s+m.labor;},0);
-  var totalOrc6   = rev6months.reduce(function(s,m){return s+m.orc;},0);
-  var totalRev6   = totalRec6+totalLab6+totalOrc6;
-  var currentMKey = now6.getFullYear()+"-"+p(now6.getMonth()+1);
-  var currentM    = rev6months.find(function(m){return m.key===currentMKey;})||{total:0,recorrente:0,labor:0,orc:0};
-
-  // KPI row
-  h += "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px'>";
-  h += "<div style='background:linear-gradient(135deg,#1A2C7A,#1E6FBF);border-radius:10px;padding:12px;text-align:center'><div style='font-size:9px;color:rgba(255,255,255,.7);text-transform:uppercase;font-weight:700;margin-bottom:4px'>Este mês</div><div style='font-size:18px;font-weight:800;color:#fff;font-family:JetBrains Mono,monospace'>R$ "+Math.round(currentM.total).toLocaleString("pt-BR")+"</div></div>";
-  h += "<div style='background:#EDFBF3;border:1px solid #B8E8CC;border-radius:10px;padding:12px;text-align:center'><div style='font-size:9px;color:#1A9E4A;text-transform:uppercase;font-weight:700;margin-bottom:4px'>Recorrente 6m</div><div style='font-size:18px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace'>R$ "+Math.round(totalRec6).toLocaleString("pt-BR")+"</div></div>";
-  h += "<div style='background:#EEF5FF;border:1px solid #A0CAEF;border-radius:10px;padding:12px;text-align:center'><div style='font-size:9px;color:#1E6FBF;text-transform:uppercase;font-weight:700;margin-bottom:4px'>Mão de obra 6m</div><div style='font-size:18px;font-weight:800;color:#1E6FBF;font-family:JetBrains Mono,monospace'>R$ "+Math.round(totalLab6).toLocaleString("pt-BR")+"</div></div>";
-  h += "<div style='background:#FFFAEE;border:1px solid #F0DCA0;border-radius:10px;padding:12px;text-align:center'><div style='font-size:9px;color:#E8A000;text-transform:uppercase;font-weight:700;margin-bottom:4px'>Orçamentos 6m</div><div style='font-size:18px;font-weight:800;color:#E8A000;font-family:JetBrains Mono,monospace'>R$ "+Math.round(totalOrc6).toLocaleString("pt-BR")+"</div></div>";
-  h += "</div>";
-
-  // Stacked bar chart canvas
-  h += "<canvas id='chart-revenue-full' height='140'></canvas>";
-
-  // Legend
-  h += "<div style='display:flex;gap:16px;justify-content:center;margin-top:10px'>";
-  h += "<div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)'><div style='width:12px;height:12px;background:#1A9E4A;border-radius:3px'></div>Contratos/Alugueis</div>";
-  h += "<div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)'><div style='width:12px;height:12px;background:#1E6FBF;border-radius:3px'></div>Mão de obra</div>";
-  h += "<div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)'><div style='width:12px;height:12px;background:#E8A000;border-radius:3px'></div>Orçamentos aprovados</div>";
-  h += "</div>";
-  h += "</div>"; // close receita card
-
-  // Save months data for chart init
-  h += "<script>window._rev6months = "+JSON.stringify(rev6months)+";<\/script>";
-
-  // ── PER TECH CARDS ────────────────────────────────────────────────────
-  h+="<div style='display:flex;flex-direction:column;gap:16px'>";
-  stats.forEach(function(ts){
-    var dd=Object.keys(ts.dm).sort();
-    h+="<div style='background:#fff;border:1px solid #DDE1EC;border-left:4px solid "+ts.col+";border-radius:12px;padding:18px 20px'>";
-    h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px'>";
-    h+="<div><div style='font-size:16px;font-weight:800;color:"+ts.col+"'>"+ts.nm+"</div><div style='font-size:11px;color:#8A95A8;margin-top:2px'>"+ts.team+" - "+(ts.role==="ajudante"?"Ajudante":"Tecnico")+"</div></div>";
-    h+="<div style='text-align:right'><div style='font-size:22px;font-weight:800;color:"+ts.col+";font-family:JetBrains Mono,monospace'>"+m2s(ts.tm)+"</div><div style='font-size:11px;color:#8A95A8;margin-top:2px'>"+ts.ol.length+" OS - R$ "+ts.tv.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</div></div></div>";
-    if(dd.length>0){
-      h+="<div style='background:#F8F9FC;border-radius:9px;padding:12px;margin-bottom:12px'><div style='font-size:10px;color:#8A95A8;font-weight:700;text-transform:uppercase;margin-bottom:8px'>Por Dia</div><div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px'>";
-      dd.forEach(function(dt){var m=ts.dm[dt];var df=new Date(dt+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});var pct=Math.min(100,Math.round(m/480*100));h+="<div style='background:#fff;border:1px solid #DDE1EC;border-radius:8px;padding:8px;text-align:center'><div style='font-size:10px;color:#8A95A8;margin-bottom:4px'>"+df+"</div><div style='font-size:15px;font-weight:800;color:"+ts.col+";font-family:JetBrains Mono,monospace'>"+m2s(m)+"</div><div style='background:#F0F2F7;border-radius:3px;height:4px;margin-top:4px'><div style='background:"+ts.col+";width:"+pct+"%;height:100%;border-radius:3px'></div></div></div>";});
-      h+="</div></div>";
-    }
-    if(ts.ol.length>0){
-      h+="<div><div style='font-size:10px;color:#8A95A8;font-weight:700;text-transform:uppercase;margin-bottom:8px'>OS do Periodo</div>";
-      ts.ol.forEach(function(item){var o=item.o;var sc=gsc(o.status);h+="<div style='display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #EEE'><span style='font-size:11px;font-weight:700;color:#1A2C7A;font-family:JetBrains Mono,monospace;min-width:60px'>"+(o.osNumber||"")+"</span><div style='flex:1;min-width:0'><div style='font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>"+(o.client||"")+"</div><div style='font-size:10px;color:#8A95A8'>"+(o.service||"")+"</div></div><span style='font-size:10px;color:"+ts.col+";font-weight:700;white-space:nowrap;font-family:JetBrains Mono,monospace'>"+m2s(item.om)+"</span><span class='tag' style='background:"+sc.bg+";color:"+sc.c+"'>"+(o.status||"")+"</span>"+(item.ov?"<span style='font-size:10px;color:#1A9E4A;font-weight:700;white-space:nowrap'>R$ "+item.ov.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</span>":"")+"</div>";});
+  // TEMPO MÉDIO POR SERVIÇO
+  if(selCharts.svcavg){
+    var svcMap={};
+    orders.filter(function(o){if(o.status!=="Concluída"||!o.totalMins||o.totalMins<=0)return false;if(svcTypeFilter!=="todos"&&o.type!==svcTypeFilter)return false;if(tf!=="todos"&&o.team!==tf)return false;return true;}).forEach(function(o){var key=o.service||"Outros";if(!svcMap[key])svcMap[key]={total:0,count:0};svcMap[key].total+=o.totalMins;svcMap[key].count++;});
+    var svcEntries=Object.entries(svcMap).map(function(e){return{svc:e[0],avg:Math.round(e[1].total/e[1].count),count:e[1].count};}).sort(function(a,b){return b.avg-a.avg;});
+    var barColors=["#1A2C7A","#1E6FBF","#1A9E4A","#E8A000","#D45A1A","#E03030","#8A95A8","#6B48FF"];
+    window._svcAvgData=svcEntries.map(function(e,i){return{svc:e.svc,avg:e.avg,count:e.count,color:barColors[i%barColors.length]};});
+    h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;'>";
+    h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px;'>⏱ Tempo Médio por Tipo de Serviço</div>";
+    if(svcEntries.length===0){h+="<div style='text-align:center;padding:30px;color:#8A95A8;font-size:13px;'>Sem OS concluídas com tempo registrado</div>";}
+    else{
+      var canvasH=Math.max(160,svcEntries.length*44+40);
+      h+="<canvas id='chart-svc-avg' height='"+canvasH+"'></canvas>";
+      h+="<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:14px;'>";
+      svcEntries.forEach(function(e,i){var col=barColors[i%barColors.length];var avgStr=e.avg>=60?Math.floor(e.avg/60)+"h"+(e.avg%60?" "+e.avg%60+"min":""):e.avg+"min";h+="<div style='background:#F8F9FC;border:1px solid #DDE1EC;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;'><div><div style='font-size:11px;font-weight:700;color:#1A2340;'>"+e.svc+"</div><div style='font-size:10px;color:#8A95A8;margin-top:2px;'>"+e.count+" OS</div></div><div style='font-size:15px;font-weight:800;color:"+col+";font-family:JetBrains Mono,monospace;'>"+avgStr+"</div></div>";});
       h+="</div>";
-    } else {
-      h+="<div style='font-size:12px;color:#8A95A8;text-align:center;padding:10px 0'>Nenhuma OS no periodo</div>";
     }
     h+="</div>";
-  });
-  if(stats.length===0)h+="<div style='text-align:center;padding:60px;color:#8A95A8'><div style='font-size:36px;margin-bottom:10px'>&#128202;</div><div style='font-size:14px;font-weight:600'>Nenhum dado no periodo</div></div>";
-  h+="</div></div>";
+  }
+
+  // TAXA DE CONCLUSÃO NO PRAZO
+  if(selCharts.taxa){
+    var osCS=orders.filter(function(o){return o.scheduledDate&&o.status==="Concluída";});
+    var oT=0,lT=0;
+    osCS.forEach(function(o){var lx=(o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});if(!lx.length)return;if(lx[lx.length-1].date<=o.scheduledDate)oT++;else lT++;});
+    var tsched=oT+lT,pct=tsched>0?Math.round(oT/tsched*100):null;
+    var gc=pct===null?"#8A95A8":pct>=80?"#1A9E4A":pct>=60?"#E8A000":"#E03030";
+    var svcMap2={};orders.forEach(function(o){if(!o.service)return;svcMap2[o.service]=(svcMap2[o.service]||0)+1;});
+    var svcE2=Object.entries(svcMap2).sort(function(a,b){return b[1]-a[1];});
+    var totSvcOS=orders.length||1;
+    var sc2=["#1A2C7A","#1E6FBF","#1A9E4A","#E8A000","#D45A1A","#E03030","#8A95A8","#6B48FF"];
+    h+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;'>";
+    h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;'>";
+    h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:16px;letter-spacing:.8px;'>✅ Taxa de Conclusão no Prazo</div>";
+    if(pct===null){h+="<div style='text-align:center;padding:20px 0;color:#8A95A8;font-size:13px;'>Sem dados</div>";}
+    else{
+      h+="<div style='text-align:center;margin-bottom:16px;'><div style='font-size:52px;font-weight:800;color:"+gc+";font-family:JetBrains Mono,monospace;line-height:1;'>"+pct+"%</div><div style='font-size:12px;color:#8A95A8;margin-top:6px;'>concluídas no prazo</div></div>";
+      h+="<div style='background:#F0F2F7;border-radius:8px;height:10px;margin-bottom:12px;overflow:hidden;'><div style='background:"+gc+";width:"+pct+"%;height:100%;border-radius:8px;'></div></div>";
+      h+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;'><div style='background:#EDFBF3;border-radius:8px;padding:10px;text-align:center;'><div style='font-size:10px;color:#1A9E4A;font-weight:700;text-transform:uppercase;'>No prazo</div><div style='font-size:20px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace;'>"+oT+"</div></div><div style='background:#FFF0F0;border-radius:8px;padding:10px;text-align:center;'><div style='font-size:10px;color:#E03030;font-weight:700;text-transform:uppercase;'>Atrasadas</div><div style='font-size:20px;font-weight:800;color:#E03030;font-family:JetBrains Mono,monospace;'>"+lT+"</div></div></div>";
+      h+="<div style='font-size:10px;color:#8A95A8;text-align:center;margin-top:8px;'>Total: "+tsched+" OS</div>";
+      if(lT>0){var lateOS2=osCS.filter(function(o){var lx=(o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});if(!lx.length)return false;return lx[lx.length-1].date>o.scheduledDate;});h+="<div style='margin-top:12px;border-top:1px solid #DDE1EC;padding-top:10px;'><div style='font-size:10px;font-weight:700;text-transform:uppercase;color:#E03030;margin-bottom:8px;'>⚠️ Concluídas com Atraso</div>";lateOS2.forEach(function(o){var lx=(o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});var ed=lx[lx.length-1].date;var dias=Math.round((new Date(ed+"T12:00:00")-new Date(o.scheduledDate+"T12:00:00"))/864e5);var t2=TEAMS[o.team];h+="<div style='display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F0F2F7;'><div><div style='font-size:12px;font-weight:700;color:#1A2340;'>"+(o.osNumber||"OS")+" — "+(o.client||"")+"</div><div style='font-size:10px;color:#8A95A8;margin-top:1px;'>Agendado "+o.scheduledDate+" · Realizado "+ed+(t2?" · "+t2.tech:"")+"</div></div><span style='font-size:11px;font-weight:700;color:#E03030;background:#FFF0F0;padding:3px 8px;border-radius:5px;'>+"+dias+"d</span></div>";});h+="</div>";}
+    }
+    h+="</div>";
+    h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;'>";
+    h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px;'>🔧 OS por Tipo de Serviço</div>";
+    svcE2.forEach(function(entry,idx){var svc=entry[0],cnt=entry[1],pct2=Math.round(cnt/totSvcOS*100),col=sc2[idx%sc2.length];h+="<div style='margin-bottom:10px;'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'><div style='font-size:12px;font-weight:600;color:var(--text);'>"+svc+"</div><div style='display:flex;align-items:center;gap:8px;'><span style='font-size:11px;color:#8A95A8;'>"+cnt+" OS</span><span style='font-size:11px;font-weight:700;color:"+col+";'>"+pct2+"%</span></div></div><div style='background:#F0F2F7;border-radius:4px;height:6px;overflow:hidden;'><div style='background:"+col+";width:"+pct2+"%;height:100%;border-radius:4px;'></div></div></div>";});
+    h+="</div></div>";
+  }
+
+  // RECEITA CONSOLIDADA
+  if(selCharts.revfull){
+    var now6=new Date(),rev6=[];
+    for(var mi6=5;mi6>=0;mi6--){var d6=new Date(now6.getFullYear(),now6.getMonth()-mi6,1);var key6=d6.getFullYear()+"-"+p(d6.getMonth()+1);var label6=d6.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"});var rec6=clientes.filter(function(c){return(c.ctype==="contrato"||c.ctype==="aluguel")&&c.monthly;}).reduce(function(sum,c){return sum+((c.payments&&c.payments[key6])?(c.monthly||0):0);},0);var moS=new Date(d6.getFullYear(),d6.getMonth(),1),moE=new Date(d6.getFullYear(),d6.getMonth()+1,0,23,59,59);var lab6=orders.filter(function(o){return o.status==="Concluída"&&o.laborTotal>0;}).reduce(function(sum,o){return sum+((o.execLog||[]).some(function(ex){return inDR(ex.date,moS,moE);})?(o.laborTotal||0):0);},0);var orc6=orcamentos.filter(function(orc){if(orc.status!=="aprovado"||!orc.createdAt)return false;var dt=orc.createdAt.toDate?orc.createdAt.toDate():new Date(orc.createdAt);return dt>=moS&&dt<=moE;}).reduce(function(sum,orc){return sum+(orc.total||0);},0);rev6.push({label:label6,recorrente:rec6,labor:lab6,orc:orc6,total:rec6+lab6+orc6,key:key6});}
+    window._rev6months=rev6;
+    var tRec=rev6.reduce(function(s,m){return s+m.recorrente;},0),tLab=rev6.reduce(function(s,m){return s+m.labor;},0),tOrc=rev6.reduce(function(s,m){return s+m.orc;},0);
+    var curM=rev6.find(function(m){return m.key===now6.getFullYear()+"-"+p(now6.getMonth()+1);})||{total:0,recorrente:0,labor:0,orc:0};
+    h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;'>";
+    h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:16px;letter-spacing:.8px;'>💰 Receita Consolidada — últimos 6 meses</div>";
+    h+="<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;'>";
+    h+="<div style='background:linear-gradient(135deg,#1A2C7A,#1E6FBF);border-radius:10px;padding:12px;text-align:center;'><div style='font-size:9px;color:rgba(255,255,255,.7);text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Este mês</div><div style='font-size:18px;font-weight:800;color:#fff;font-family:JetBrains Mono,monospace;'>R$ "+Math.round(curM.total).toLocaleString("pt-BR")+"</div></div>";
+    h+="<div style='background:#EDFBF3;border:1px solid #B8E8CC;border-radius:10px;padding:12px;text-align:center;'><div style='font-size:9px;color:#1A9E4A;text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Recorrente 6m</div><div style='font-size:18px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace;'>R$ "+Math.round(tRec).toLocaleString("pt-BR")+"</div></div>";
+    h+="<div style='background:#EEF5FF;border:1px solid #A0CAEF;border-radius:10px;padding:12px;text-align:center;'><div style='font-size:9px;color:#1E6FBF;text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Mão de obra 6m</div><div style='font-size:18px;font-weight:800;color:#1E6FBF;font-family:JetBrains Mono,monospace;'>R$ "+Math.round(tLab).toLocaleString("pt-BR")+"</div></div>";
+    h+="<div style='background:#FFFAEE;border:1px solid #F0DCA0;border-radius:10px;padding:12px;text-align:center;'><div style='font-size:9px;color:#E8A000;text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Orçamentos 6m</div><div style='font-size:18px;font-weight:800;color:#E8A000;font-family:JetBrains Mono,monospace;'>R$ "+Math.round(tOrc).toLocaleString("pt-BR")+"</div></div>";
+    h+="</div><canvas id='chart-revenue-full' height='140'></canvas>";
+    h+="<div style='display:flex;gap:16px;justify-content:center;margin-top:10px;'><div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);'><div style='width:12px;height:12px;background:#1A9E4A;border-radius:3px;'></div>Contratos/Alugueis</div><div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);'><div style='width:12px;height:12px;background:#1E6FBF;border-radius:3px;'></div>Mão de obra</div><div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);'><div style='width:12px;height:12px;background:#E8A000;border-radius:3px;'></div>Orçamentos</div></div>";
+    h+="</div>";
+  }
+
+  // CARDS POR TÉCNICO
+  if(selCharts.cards){
+    h+="<div style='display:flex;flex-direction:column;gap:16px;'>";
+    stats.forEach(function(ts){
+      var dd=Object.keys(ts.dm).sort();
+      h+="<div style='background:#fff;border:1px solid #DDE1EC;border-left:4px solid "+ts.col+";border-radius:12px;padding:18px 20px;'>";
+      h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;'><div><div style='font-size:16px;font-weight:800;color:"+ts.col+";'>"+ts.nm+"</div><div style='font-size:11px;color:#8A95A8;margin-top:2px;'>"+ts.team+" · "+(ts.role==="ajudante"?"Ajudante":"Técnico")+"</div></div><div style='text-align:right;'><div style='font-size:22px;font-weight:800;color:"+ts.col+";font-family:JetBrains Mono,monospace;'>"+m2s(ts.tm)+"</div><div style='font-size:11px;color:#8A95A8;margin-top:2px;'>"+ts.ol.length+" OS · R$ "+ts.tv.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</div></div></div>";
+      if(dd.length>0){h+="<div style='background:#F8F9FC;border-radius:9px;padding:12px;margin-bottom:12px;'><div style='font-size:10px;color:#8A95A8;font-weight:700;text-transform:uppercase;margin-bottom:8px;'>Por Dia</div><div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;'>";dd.forEach(function(dt){var m=ts.dm[dt];var df=new Date(dt+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});var pct=Math.min(100,Math.round(m/480*100));h+="<div style='background:#fff;border:1px solid #DDE1EC;border-radius:8px;padding:8px;text-align:center;'><div style='font-size:10px;color:#8A95A8;margin-bottom:4px;'>"+df+"</div><div style='font-size:15px;font-weight:800;color:"+ts.col+";font-family:JetBrains Mono,monospace;'>"+m2s(m)+"</div><div style='background:#F0F2F7;border-radius:3px;height:4px;margin-top:4px;'><div style='background:"+ts.col+";width:"+pct+"%;height:100%;border-radius:3px;'></div></div></div>";});h+="</div></div>";}
+      if(ts.ol.length>0){h+="<div><div style='font-size:10px;color:#8A95A8;font-weight:700;text-transform:uppercase;margin-bottom:8px;'>OS do Período</div>";ts.ol.forEach(function(item){var o=item.o;var sc=gsc(o.status);h+="<div style='display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #EEE;'><span style='font-size:11px;font-weight:700;color:#1A2C7A;font-family:JetBrains Mono,monospace;min-width:60px;'>"+(o.osNumber||"")+"</span><div style='flex:1;min-width:0;'><div style='font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>"+(o.client||"")+"</div><div style='font-size:10px;color:#8A95A8;'>"+(o.service||"")+"</div></div><span style='font-size:10px;color:"+ts.col+";font-weight:700;white-space:nowrap;font-family:JetBrains Mono,monospace;'>"+m2s(item.om)+"</span><span class='tag' style='background:"+sc.bg+";color:"+sc.c+";'>"+(o.status||"")+"</span>"+(item.ov?"<span style='font-size:10px;color:#1A9E4A;font-weight:700;white-space:nowrap;'>R$ "+item.ov.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</span>":"")+"</div>";});h+="</div>";}
+      else{h+="<div style='font-size:12px;color:#8A95A8;text-align:center;padding:10px 0;'>Nenhuma OS no período</div>";}
+      h+="</div>";
+    });
+    if(stats.length===0)h+="<div style='text-align:center;padding:60px;color:#8A95A8;'><div style='font-size:36px;margin-bottom:10px;'>📊</div><div style='font-size:14px;font-weight:600;'>Nenhum dado no período</div></div>";
+    h+="</div>";
+  }
+
+  h+="</div>"; // end rel-charts-area
+  h+="</div>"; // end outer
+
   window._relStats = stats;
   window._relOrders = orders;
   window._relClientes = clientes;
@@ -4920,6 +4744,26 @@ window.initRelCharts = function initRelCharts(){
     });
   }
 }
+window.exportRelPDFSelected = function(){
+  var selCharts = window._relSelCharts || {};
+  var area = document.getElementById("rel-charts-area");
+  if(!area){ window.exportRelPDF(); return; }
+  var pw = window.open("","_blank");
+  if(!pw) return;
+  var clone = area.cloneNode(true);
+  clone.querySelectorAll("button").forEach(function(b){b.remove();});
+  clone.querySelectorAll("input[type=checkbox]").forEach(function(c){c.remove();});
+  pw.document.open();
+  pw.document.write("<html><head><meta charset='UTF-8'><title>Relatório Prótons</title>");
+  pw.document.write("<style>body{font-family:Arial,sans-serif;font-size:12px;padding:20px}button{display:none!important}.tag{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700}*{box-sizing:border-box}</style>");
+  pw.document.write("<\/head><body><h2 style='color:#1A2C7A;margin-bottom:16px;'>Relatório Prótons OS</h2>");
+  pw.document.write(clone.innerHTML);
+  pw.document.write("<\/body><\/html>");
+  pw.document.close();
+  pw.focus();
+  setTimeout(function(){pw.print();},600);
+};
+
 window.exportRelPDF = function(){
   var pw=window.open("","_blank");
   if(!pw)return;
