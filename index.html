@@ -3319,15 +3319,8 @@ window.render = function render(){
     mc.innerHTML=rRelatorios();
     setTimeout(function(){
       if(window.initRelCharts) window.initRelCharts();
-      setTimeout(function(){
-        if(window._relScrollTo){
-          var el = document.getElementById(window._relScrollTo);
-          if(el) el.scrollIntoView({behavior:"smooth", block:"center"});
-          window._relScrollTo = null;
-        } else {
-          window.scrollTo(0, _scrollY);
-        }
-      }, 80);
+      window.scrollTo(0, _scrollY);
+      window._relScrollTo = null;
     }, 300);
   }
   else mc.innerHTML=rCal();
