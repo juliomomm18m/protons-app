@@ -4485,7 +4485,8 @@ function rRelatorios(){
     var barColors = ["#1A2C7A","#1E6FBF","#1A9E4A","#E8A000","#D45A1A","#E03030","#8A95A8","#6B48FF"];
     h += "<canvas id='chart-svc-avg' height='160'></canvas>";
     // Store data for chart init
-    h += "<script>window._svcAvgData=" + JSON.stringify(svcEntries.map(function(e,i){return {svc:e.svc,avg:e.avg,count:e.count,color:barColors[i%barColors.length]};})) + ";<\/script>";
+    // _svcAvgData set via window for chart init
+    window._svcAvgData = svcEntries.map(function(e,i){return {svc:e.svc,avg:e.avg,count:e.count,color:barColors[i%barColors.length]};});
     // Summary table below chart
     h += "<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:14px;'>";
     svcEntries.forEach(function(e,i){
