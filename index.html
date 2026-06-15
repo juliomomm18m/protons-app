@@ -336,10 +336,36 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
         <label>Cliente</label>
         <div style="display:flex;gap:8px;">
           <input type="text" id="fc" placeholder="Nome do cliente" style="flex:1;padding:9px 11px;border-radius:8px;border:1px solid #DDE1EC;font-size:13px;outline:none;font-family:'Syne',sans-serif;"/>
-          <button type="button" onclick="openCliPicker(function(c){document.getElementById('fc').value=c.name||'';document.getElementById('fa').value=c.fullAddress||c.street||'';document.getElementById('fct').value=c.phone||'';})" style="padding:9px 12px;border-radius:8px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;">🔍 Buscar</button>
+          <button type="button" onclick="openCliPicker(function(c){
+  document.getElementById('fc').value=c.name||'';
+  document.getElementById('fa').value=c.fullAddress||c.street||'';
+  document.getElementById('fct').value=c.phone||'';
+  window._osCli = c;
+  // Show address selector if client has a secondary address
+  var btns = document.getElementById('fa-addr-btns');
+  if(btns){
+    var hasAddr2 = c.street2 || c.fullAddress2;
+    btns.style.display = hasAddr2 ? 'flex' : 'none';
+    if(hasAddr2){
+      document.getElementById('btn-addr-pri').style.background='#EEF3FF';
+      document.getElementById('btn-addr-pri').style.color='#1A2C7A';
+      document.getElementById('btn-addr-sec').style.background='#F5F7FA';
+      document.getElementById('btn-addr-sec').style.color='#8A95A8';
+    }
+  }
+})" style="padding:9px 12px;border-radius:8px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;">🔍 Buscar</button>
         </div>
       </div>
-      <div class="fg" style="grid-column:1/-1"><label>Endereço</label><input type="text" id="fa" placeholder="Rua, número, bairro"/></div>
+      <div class="fg" style="grid-column:1/-1">
+        <label style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Endereço</span>
+          <div id="fa-addr-btns" style="display:none;gap:6px;">
+            <button type="button" id="btn-addr-pri" onclick="setOsAddr('primary')" style="padding:3px 8px;border-radius:5px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:10px;font-weight:700;">📍 Principal</button>
+            <button type="button" id="btn-addr-sec" onclick="setOsAddr('secondary')" style="padding:3px 8px;border-radius:5px;border:1px solid #DDE1EC;background:#F5F7FA;color:#8A95A8;cursor:pointer;font-size:10px;font-weight:700;">📍 Secundário</button>
+          </div>
+        </label>
+        <input type="text" id="fa" placeholder="Rua, número, bairro"/>
+      </div>
       <div class="fg"><label>Contato</label><input type="text" id="fct" placeholder="(47) 99999-0000"/></div>
       <div class="fg"><label>Serviço</label><select id="fs" onchange="fchg()">
         <option>CFTV / Câmeras</option><option>Alarme</option><option>Controle de Acesso</option>
@@ -2118,6 +2144,7 @@ window.openNew=function(date){
   editId=null;g("om-ttl").textContent="Nova Ordem de Serviço";
   sv("ft","Manutenção");sv("fp","Média");sv("fs","CFTV / Câmeras");sv("fst","Aguardando");sv("fte","");sv("fh","");
   ["fc","fa","fct","fn","fsd","fss","fse","fas","fae"].forEach(id=>sv(id,""));
+  window._osCli=null; var _ab=document.getElementById("fa-addr-btns"); if(_ab) _ab.style.display="none";
   sv("fsd",date||"");fchg();updDur();showModal("om");
 };
 window.openEdit=function(id){
@@ -2296,6 +2323,25 @@ window.setNowField = function(id){
     }
   }
   updTDur();
+};
+window.setOsAddr = function(type){
+  var c = window._osCli;
+  if(!c) return;
+  if(type === 'primary'){
+    var addr = c.fullAddress || [c.street,c.hood,c.city,c.state].filter(Boolean).join(', ');
+    document.getElementById('fa').value = addr || '';
+    document.getElementById('btn-addr-pri').style.background='#EEF3FF';
+    document.getElementById('btn-addr-pri').style.color='#1A2C7A';
+    document.getElementById('btn-addr-sec').style.background='#F5F7FA';
+    document.getElementById('btn-addr-sec').style.color='#8A95A8';
+  } else {
+    var addr2 = [c.street2,c.hood2,c.city2,c.state2].filter(Boolean).join(', ');
+    document.getElementById('fa').value = addr2 || c.addr2ref || '';
+    document.getElementById('btn-addr-sec').style.background='#EEF3FF';
+    document.getElementById('btn-addr-sec').style.color='#1A2C7A';
+    document.getElementById('btn-addr-pri').style.background='#F5F7FA';
+    document.getElementById('btn-addr-pri').style.color='#8A95A8';
+  }
 };
 window.setView=function(v){
   view=v;document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));render();
@@ -3074,30 +3120,95 @@ window.updateOrcStatus = async function(id, status){
   closeM("orc-detail");
 };
 
-window.aprovarOrc = async function(id){
+window.aprovarOrc = function(id){
   const orc = orcamentos.find(x=>x.id===id);
   if(!orc) return;
+  // Show scheduling modal before creating OS
+  const existing = document.getElementById('orc-schedule-modal');
+  if(existing) existing.remove();
+  const today = new Date().toISOString().split('T')[0];
+  const teamOptions = Object.keys(TEAMS).map(tid=>`<option value="${tid}">${TEAMS[tid].tech} — ${TEAMS[tid].name}</option>`).join('');
+  const modal = document.createElement('div');
+  modal.id = 'orc-schedule-modal';
+  modal.className = 'backdrop';
+  modal.style.zIndex = '350';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:460px;">
+      <div class="mhdr">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#1A2C7A;">✅ Aprovar e Agendar OS</div>
+          <div style="font-size:10px;color:#8A95A8;margin-top:2px;">${orc.client} · ${orc.service||''}</div>
+        </div>
+        <button onclick="document.getElementById('orc-schedule-modal').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
+      </div>
+      <div class="mbdy" style="display:flex;flex-direction:column;gap:14px;">
+        <div style="background:#EDFBF3;border:1px solid #B8E8CC;border-radius:9px;padding:12px;">
+          <div style="font-size:11px;font-weight:700;color:#1A9E4A;margin-bottom:4px;">💰 Valor do Orçamento</div>
+          <div style="font-size:20px;font-weight:800;color:#1A2C7A;font-family:'JetBrains Mono',monospace;">R$ ${(orc.total||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        </div>
+        <div class="fg"><label>👷 Técnico Responsável *</label>
+          <select id="orc-sch-team" style="font-family:'Syne',sans-serif;">
+            <option value="">— Selecionar técnico —</option>
+            ${teamOptions}
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="fg"><label>📅 Data de Execução *</label>
+            <input type="date" id="orc-sch-date" value="${today}" min="${today}"/>
+          </div>
+          <div class="fg"><label>⏰ Horário Previsto</label>
+            <input type="time" id="orc-sch-time" value="08:00"/>
+          </div>
+        </div>
+        <div class="fg"><label>📝 Observações para a OS</label>
+          <textarea id="orc-sch-notes" rows="2" placeholder="Instruções adicionais...">${orc.desc||''}</textarea>
+        </div>
+      </div>
+      <div class="mftr">
+        <button class="bcancel" onclick="document.getElementById('orc-schedule-modal').remove()">Cancelar</button>
+        <button class="bsave bsaveg" onclick="confirmarAprovarOrc('${id}')">✅ Confirmar e Criar OS</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+};
+
+window.confirmarAprovarOrc = async function(id){
+  const orc = orcamentos.find(x=>x.id===id);
+  if(!orc) return;
+  const team = document.getElementById('orc-sch-team').value;
+  const date = document.getElementById('orc-sch-date').value;
+  const time = document.getElementById('orc-sch-time').value;
+  const notes = document.getElementById('orc-sch-notes').value;
+  if(!team){ toast('Selecione o técnico responsável',false); return; }
+  if(!date){ toast('Selecione a data de execução',false); return; }
   try{
-    // Create OS from orcamento
     const osData = {
-      type: "Nova Instalação",
+      type: 'Nova Instalação',
       client: orc.client,
-      address: orc.address||"",
-      contact: orc.contact||"",
-      service: orc.service||"Outros",
-      priority: "Média",
-      status: "Aguardando",
-      team: null, helper: null,
-      scheduledDate: null, scheduledStart: null, scheduledEnd: null,
+      address: orc.address||'',
+      contact: orc.contact||'',
+      service: orc.service||'Outros',
+      priority: 'Média',
+      status: 'Aguardando',
+      team: team, helper: null,
+      scheduledDate: date,
+      scheduledStart: time||null,
+      scheduledEnd: null,
       actualStart: null, actualEnd: null,
-      notes: `OS gerada pelo orçamento. ${orc.desc||""}`,
-      createdAt: serverTimestamp()
+      notes: notes ? `OS gerada pelo orçamento. ${notes}` : `OS gerada pelo orçamento. ${orc.desc||''}`,
+      createdAt: serverTimestamp(),
+      createdBy: userProfile?userProfile.name:'Sistema',
     };
+    // Generate OS number
+    const existingNums = orders.map(o=>{const n=parseInt((o.osNumber||'OS-000').replace('OS-',''));return isNaN(n)?0:n;});
+    const nextNum = existingNums.length>0 ? Math.max(...existingNums)+1 : 1;
+    osData.osNumber = 'OS-'+String(nextNum).padStart(3,'0');
     const osRef = await addDoc(col, osData);
-    await updateDoc(doc(db,"orcamentos",id),{status:"aprovado", osId:osRef.id});
-    toast("Orçamento aprovado e OS criada! ✓");
-    closeM("orc-detail");
-  }catch(e){toast("Erro ao aprovar",false);console.error(e);}
+    await updateDoc(doc(db,'orcamentos',id),{status:'aprovado', osId:osRef.id});
+    toast('Orçamento aprovado e OS '+osData.osNumber+' criada! ✓');
+    document.getElementById('orc-schedule-modal').remove();
+    closeM('orc-detail');
+  }catch(e){toast('Erro ao aprovar',false);console.error(e);}
 };
 
 window.editOrc = async function(id){
