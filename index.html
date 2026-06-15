@@ -3559,10 +3559,10 @@ function rOrdens(){
 
 function rCal(){
   const dim=new Date(calY,calM+1,0).getDate(),fd=new Date(calY,calM,1).getDay(),td=tstr();
-  // Filter orders for calendar based on role
-  let baseOrdCal = orders;
-  if(userProfile && userProfile.role==="tecnico") baseOrdCal=orders.filter(o=>o.team===userProfile.team);
-  else if(userProfile && userProfile.role==="ajudante") baseOrdCal=orders.filter(o=>o.helper===userProfile.name);
+  // Filter orders for calendar based on role — exclude concluded and cancelled
+  let baseOrdCal = orders.filter(o=>o.status!=="Concluída"&&o.status!=="Cancelada");
+  if(userProfile && userProfile.role==="tecnico") baseOrdCal=baseOrdCal.filter(o=>o.team===userProfile.team);
+  else if(userProfile && userProfile.role==="ajudante") baseOrdCal=baseOrdCal.filter(o=>o.helper===userProfile.name);
   else {
     // Gestor/Admin filters
     if(window._calTech && window._calTech!=="todos"){
