@@ -2246,7 +2246,7 @@ window.openTime=function(id){
         '</div>' +
         (tasLocked
           ? '<div style="width:100%;padding:7px;border-radius:6px;background:#B8E8CC;color:#1A6634;font-size:11px;font-weight:700;text-align:center;margin-top:4px;">🔒 Registrado às ' + tasVal + '</div>'
-          : '<button id="btn-now-tas" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:none;background:#1A9E4A;color:#fff;cursor:pointer;font-size:12px;font-weight:700;" onclick="setNowField('tas')">🕐 Registrar Início</button>'
+          : '<button id="btn-now-tas" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:none;background:#1A9E4A;color:#fff;cursor:pointer;font-size:12px;font-weight:700;" onclick="setNowField(&quot;tas&quot;)">🕐 Registrar Início</button>'
         );
     }
 
@@ -2259,7 +2259,7 @@ window.openTime=function(id){
           '<input type="hidden" id="tae" value="" oninput="updTDur()"/>' +
         '</div>' +
         (tasLocked
-          ? '<button id="btn-now-tae" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:none;background:#D45A1A;color:#fff;cursor:pointer;font-size:12px;font-weight:700;" onclick="setNowField('tae')">🕐 Registrar Término</button>'
+          ? '<button id="btn-now-tae" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:none;background:#D45A1A;color:#fff;cursor:pointer;font-size:12px;font-weight:700;" onclick="setNowField(&quot;tae&quot;)">🕐 Registrar Término</button>'
           : '<div id="tae-placeholder" style="width:100%;padding:7px;border-radius:6px;background:#F3F4F7;color:#8A95A8;font-size:11px;font-weight:600;text-align:center;margin-top:4px;">⏳ Registre o início primeiro</div>'
         );
     }
@@ -2289,7 +2289,7 @@ window.setNowField = function(id){
     if(id === 'tas'){
       const placeholder = document.getElementById('tae-placeholder');
       if(placeholder){
-        placeholder.outerHTML = '<button id="btn-now-tae" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:none;background:#D45A1A;color:#fff;cursor:pointer;font-size:12px;font-weight:700;" onclick="setNowField('tae')">🕐 Registrar Término</button>';
+        placeholder.outerHTML = '<button id="btn-now-tae" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:none;background:#D45A1A;color:#fff;cursor:pointer;font-size:12px;font-weight:700;" onclick="setNowField(&quot;tae&quot;)">🕐 Registrar Término</button>';
       }
     }
     // Se registrou término, liberar checkbox
