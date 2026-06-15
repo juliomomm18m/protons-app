@@ -2219,7 +2219,92 @@ window.openTime=function(id){
   }
 
   updTDur();
+
+  // Para técnicos: substituir os cards de tempo por versão sem selects
+  if(fieldUser){
+    const tasCard = document.querySelector('#tas-wrapper')?.closest('div[style*="EDFBF3"]') ||
+                    document.querySelector('#tas-wrapper')?.parentElement;
+    const taeCard = document.querySelector('#tae-wrapper')?.closest('div[style*="FFF4EE"]') ||
+                    document.querySelector('#tae-wrapper')?.parentElement;
+
+    // Rebuild início card
+    if(tasCard){
+      const tasVal = gv('tas');
+      const tasLocked = !!openSess; // bloqueado se já tem sessão aberta
+      tasCard.innerHTML = `
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#1A9E4A;margin-bottom:10px;">▶ Início</div>
+        <div style="text-align:center;padding:10px 0;">
+          <div id="tas-static" style="font-size:42px;font-weight:800;font-family:'JetBrains Mono',monospace;color:${tasLocked?'#1A9E4A':'#CBD0DC'};letter-spacing:2px;">
+            ${tasLocked ? (tasVal||'--:--') : '--:--'}
+          </div>
+          <input type="hidden" id="tas" value="${tasVal||''}" oninput="updTDur()"/>
+        </div>
+        ${tasLocked
+          ? `<div style="width:100%;padding:7px;border-radius:6px;background:#B8E8CC;color:#1A6634;font-size:11px;font-weight:700;text-align:center;margin-top:4px;">🔒 Registrado</div>`
+          : `<button id="btn-now-tas" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:none;background:#1A9E4A;color:#fff;cursor:pointer;font-size:12px;font-weight:700;" onclick="setNowField('tas')">🕐 Registrar Início</button>`
+        }`;
+    }
+
+    // Rebuild término card
+    if(taeCard){
+      const taeVal = gv('tae');
+      const taeLocked = !!openSess ? (!!taeVal) : true; // bloqueado se não tem sessão aberta OU se término já registrado
+      const taeRegistered = !!taeVal && hasTodayClosed;
+      taeCard.innerHTML = `
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#D45A1A;margin-bottom:10px;">⏹ Término</div>
+        <div style="text-align:center;padding:10px 0;">
+          <div id="tae-static" style="font-size:42px;font-weight:800;font-family:'JetBrains Mono',monospace;color:${taeRegistered?'#D45A1A':'#CBD0DC'};letter-spacing:2px;">
+            ${taeRegistered ? (taeVal||'--:--') : '--:--'}
+          </div>
+          <input type="hidden" id="tae" value="${taeVal||''}" oninput="updTDur()"/>
+        </div>
+        ${taeRegistered
+          ? `<div style="width:100%;padding:7px;border-radius:6px;background:#F0C8A8;color:#7A3010;font-size:11px;font-weight:700;text-align:center;margin-top:4px;">🔒 Registrado</div>`
+          : openSess
+            ? `<button id="btn-now-tae" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:none;background:#D45A1A;color:#fff;cursor:pointer;font-size:12px;font-weight:700;" onclick="setNowField('tae')">🕐 Registrar Término</button>`
+            : `<div style="width:100%;padding:7px;border-radius:6px;background:#F3F4F7;color:#8A95A8;font-size:11px;font-weight:600;text-align:center;margin-top:4px;">⏳ Registre o início primeiro</div>`
+        }`;
+    }
+  }
+
   showModal("tm");
+};
+
+// setNowField — registra o horário atual e bloqueia o campo imediatamente
+window.setNowField = function(id){
+  const n = new Date();
+  const timeStr = p(n.getHours())+':'+p(n.getMinutes());
+  const hidden = document.getElementById(id);
+  if(hidden) hidden.value = timeStr;
+
+  const staticEl = document.getElementById(id+'-static');
+  if(staticEl){
+    staticEl.textContent = timeStr;
+    staticEl.style.color = id==='tas' ? '#1A9E4A' : '#D45A1A';
+  }
+
+  // Substituir botão por badge de bloqueado
+  const btn = document.getElementById('btn-now-'+id);
+  if(btn){
+    btn.outerHTML = `<div style="width:100%;padding:7px;border-radius:6px;background:${id==='tas'?'#B8E8CC':'#F0C8A8'};color:${id==='tas'?'#1A6634':'#7A3010'};font-size:11px;font-weight:700;text-align:center;margin-top:4px;">🔒 Registrado às ${timeStr}</div>`;
+    // Se registrou início, liberar botão de término
+    if(id === 'tas'){
+      const taeCard = document.querySelector('#tae-static')?.closest('div[style*="FFF4EE"]') ||
+                      document.querySelector('#tae-static')?.parentElement;
+      if(taeCard){
+        // Find the "Registre o início" placeholder and replace with Agora button
+        const placeholder = taeCard.querySelector('div[style*="Registre o início"]');
+        if(placeholder){
+          placeholder.outerHTML = `<button id="btn-now-tae" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:none;background:#D45A1A;color:#fff;cursor:pointer;font-size:12px;font-weight:700;" onclick="setNowField('tae')">🕐 Registrar Término</button>`;
+        }
+      }
+    }
+    // Se registrou término, liberar checkbox
+    if(id === 'tae'){
+      updTDur();
+    }
+  }
+  updTDur();
 };
 window.setView=function(v){
   view=v;document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));render();
