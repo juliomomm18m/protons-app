@@ -3333,7 +3333,17 @@ window.render = function render(){
   // Relatórios filter buttons
   const relPeriodBtns = mc.querySelectorAll(".rel-period-btn");
   relPeriodBtns.forEach(function(btn){
-    btn.addEventListener("click",function(){ window._relPeriod=this.dataset.period; render(); });
+    btn.addEventListener("click",function(){
+      var period = this.dataset.period;
+      if(period && period.startsWith("__svctype__")){
+        window._relSvcType = period.replace("__svctype__","");
+      } else if(period && period.startsWith("__svctech__")){
+        window._relSvcTech = period.replace("__svctech__","");
+      } else {
+        window._relPeriod = period;
+      }
+      render();
+    });
   });
   const relTechBtns = mc.querySelectorAll(".rel-tech-btn");
   relTechBtns.forEach(function(btn){
@@ -4396,6 +4406,73 @@ function rRelatorios(){
   h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px'>🚗 KM Rodado por Técnico</div>";
   h+="<canvas id='chart-km' height='120'></canvas></div>";
 
+
+  // ── TEMPO MÉDIO POR TIPO DE SERVIÇO ──────────────────────────────────
+  // Filters: _relSvcType (all/Nova Instalação/Manutenção), _relSvcTech (todos/equipe1/equipe2/equipe3)
+  var svcTypeFilter = window._relSvcType || "todos";
+  var svcTechFilter = window._relSvcTech || "todos";
+
+  // Build filter buttons HTML
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px'>";
+  h += "<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:14px;letter-spacing:.8px'>⏱ Tempo Médio por Tipo de Serviço</div>";
+
+  // Filter row
+  h += "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center'>";
+  h += "<div style='font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-right:4px;'>Tipo:</div>";
+  ["todos","Nova Instalação","Manutenção"].forEach(function(tp){
+    var lbl = tp === "todos" ? "Todos" : tp;
+    var a = svcTypeFilter === tp;
+    h += "<button class='rel-period-btn' data-period='__svctype__"+tp+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?"#1A2C7A":"#DDE1EC")+";background:"+(a?"#E8EEFF":"#fff")+";color:"+(a?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+lbl+"</button>";
+  });
+  h += "<div style='font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-left:8px;margin-right:4px;'>Técnico:</div>";
+  h += "<button class='rel-period-btn' data-period='__svctech__todos' style='padding:5px 12px;border-radius:7px;border:1px solid "+(svcTechFilter==="todos"?"#1A2C7A":"#DDE1EC")+";background:"+(svcTechFilter==="todos"?"#E8EEFF":"#fff")+";color:"+(svcTechFilter==="todos"?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>Todos</button>";
+  Object.keys(TEAMS).forEach(function(tid){
+    var t = TEAMS[tid]; var a = svcTechFilter === tid;
+    h += "<button class='rel-period-btn' data-period='__svctech__"+tid+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?t.color:"#DDE1EC")+";background:"+(a?t.color+"18":"#fff")+";color:"+(a?t.color:"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+t.tech+"</button>";
+  });
+  h += "</div>";
+
+  // Compute avg duration per service type
+  var svcMap = {};
+  orders.filter(function(o){
+    if(o.status !== "Concluída") return false;
+    if(!o.totalMins || o.totalMins <= 0) return false;
+    if(svcTypeFilter !== "todos" && o.type !== svcTypeFilter) return false;
+    if(svcTechFilter !== "todos" && o.team !== svcTechFilter) return false;
+    return true;
+  }).forEach(function(o){
+    var key = (o.service||"Outros");
+    if(!svcMap[key]) svcMap[key] = {total:0, count:0};
+    svcMap[key].total += o.totalMins;
+    svcMap[key].count++;
+  });
+
+  var svcEntries = Object.entries(svcMap)
+    .map(function(e){ return {svc:e[0], avg:Math.round(e[1].total/e[1].count), count:e[1].count}; })
+    .sort(function(a,b){ return b.avg - a.avg; });
+
+  if(svcEntries.length === 0){
+    h += "<div style='text-align:center;padding:30px;color:#8A95A8;font-size:13px;'>Sem OS concluídas com tempo registrado para este filtro</div>";
+  } else {
+    var maxAvg = svcEntries[0].avg || 1;
+    var barColors = ["#1A2C7A","#1E6FBF","#1A9E4A","#E8A000","#D45A1A","#E03030","#8A95A8","#6B48FF"];
+    h += "<canvas id='chart-svc-avg' height='160'></canvas>";
+    // Store data for chart init
+    h += "<script>window._svcAvgData=" + JSON.stringify(svcEntries.map(function(e,i){return {svc:e.svc,avg:e.avg,count:e.count,color:barColors[i%barColors.length]};})) + ";<\/script>";
+    // Summary table below chart
+    h += "<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:14px;'>";
+    svcEntries.forEach(function(e,i){
+      var col = barColors[i % barColors.length];
+      var avgStr = e.avg >= 60 ? Math.floor(e.avg/60)+"h"+(e.avg%60?" "+e.avg%60+"min":"") : e.avg+"min";
+      h += "<div style='background:#F8F9FC;border:1px solid #DDE1EC;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;'>";
+      h += "<div><div style='font-size:11px;font-weight:700;color:#1A2340;'>"+e.svc+"</div><div style='font-size:10px;color:#8A95A8;margin-top:2px;'>"+e.count+" OS</div></div>";
+      h += "<div style='font-size:15px;font-weight:800;color:"+col+";font-family:JetBrains Mono,monospace;'>"+avgStr+"</div>";
+      h += "</div>";
+    });
+    h += "</div>";
+  }
+  h += "</div>";
+
   // ── 1. TAXA DE CONCLUSÃO NO PRAZO ────────────────────────────────────
   var osComSchedule = orders.filter(function(o){ return o.scheduledDate && o.status === "Concluída"; });
   var onTime = 0, late = 0;
@@ -4759,6 +4836,49 @@ window.initRelCharts = function initRelCharts(){
         scales:{
           y:{beginAtZero:true,stacked:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{callback:function(v){return "R$ "+v.toLocaleString("pt-BR");}}},
           x:{stacked:true,grid:{display:false}}
+        }
+      }
+    });
+  }
+
+  // 7. Tempo médio por tipo de serviço
+  var ctx7 = document.getElementById("chart-svc-avg");
+  if(ctx7 && window._svcAvgData && window._svcAvgData.length){
+    var sd = window._svcAvgData;
+    _chartInstances['svc-avg'] = new Chart(ctx7,{
+      type:"bar",
+      data:{
+        labels: sd.map(function(e){return e.svc;}),
+        datasets:[{
+          label:"Tempo Médio",
+          data: sd.map(function(e){return e.avg;}),
+          backgroundColor: sd.map(function(e){return e.color;}),
+          borderRadius:6,
+          borderWidth:0
+        }]
+      },
+      options:{
+        indexAxis:"y",
+        responsive:true,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{
+            label:function(c){
+              var v=c.raw;
+              return "Média: "+(v>=60?Math.floor(v/60)+"h"+(v%60?" "+v%60+"min":""):v+"min");
+            },
+            afterLabel:function(c){
+              return "OS: "+sd[c.dataIndex].count;
+            }
+          }}
+        },
+        scales:{
+          x:{
+            beginAtZero:true,
+            grid:{color:"rgba(0,0,0,.05)"},
+            ticks:{callback:function(v){return v>=60?Math.floor(v/60)+"h":v+"min";}}
+          },
+          y:{grid:{display:false}}
         }
       }
     });
