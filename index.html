@@ -4904,7 +4904,15 @@ window.initRelCharts = function initRelCharts(){
           x:{
             beginAtZero:true,
             grid:{color:"rgba(0,0,0,.05)"},
-            ticks:{callback:function(v){return v>=60?Math.floor(v/60)+"h":v+"min";}}
+            ticks:{
+              stepSize:30,
+              callback:function(v){
+                if(v===0) return "0";
+                if(v<60) return v+"min";
+                var h=Math.floor(v/60), m=v%60;
+                return h+"h"+(m?m+"min":"");
+              }
+            }
           },
           y:{grid:{display:false}}
         }
