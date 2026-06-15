@@ -3314,7 +3314,22 @@ window.render = function render(){
   else if(view==="ordens")mc.innerHTML=rOrdens();
   else if(view==="orcamentos")mc.innerHTML=rOrcamentos();
   else if(view==="clientes")mc.innerHTML=rClientes();
-  else if(view==="relatorios"){mc.innerHTML=rRelatorios(); setTimeout(function(){ if(window.initRelCharts) window.initRelCharts(); }, 500);}
+  else if(view==="relatorios"){
+    var _scrollY = window.scrollY || window.pageYOffset || 0;
+    mc.innerHTML=rRelatorios();
+    setTimeout(function(){
+      if(window.initRelCharts) window.initRelCharts();
+      setTimeout(function(){
+        if(window._relScrollTo){
+          var el = document.getElementById(window._relScrollTo);
+          if(el) el.scrollIntoView({behavior:"smooth", block:"center"});
+          window._relScrollTo = null;
+        } else {
+          window.scrollTo(0, _scrollY);
+        }
+      }, 80);
+    }, 300);
+  }
   else mc.innerHTML=rCal();
   mc.querySelectorAll("[data-fn]").forEach(el=>{
     el.addEventListener("click",function(){
@@ -3335,13 +3350,15 @@ window.render = function render(){
   relPeriodBtns.forEach(function(btn){
     btn.addEventListener("click",function(){
       var period = this.dataset.period;
-      var scrollY = window.scrollY;
       if(period && period.startsWith("__svctype__")){
         window._relSvcType = period.replace("__svctype__","");
+        window._relScrollTo = "chart-svc-avg";
       } else if(period && period.startsWith("__svctech__")){
         window._relSvcTech = period.replace("__svctech__","");
+        window._relScrollTo = "chart-svc-avg";
       } else {
         window._relPeriod = period;
+        window._relScrollTo = null;
       }
       render();
       // Restore scroll position and ensure charts render in view
