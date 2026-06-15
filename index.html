@@ -4165,9 +4165,9 @@ function m2s(m){if(!m||m<=0)return "0min";return m>=60?Math.floor(m/60)+"h"+(m%6
 
 function rRelatorios(){
   if(!isGestorOrAdmin())return "<div style='text-align:center;padding:60px;color:#8A95A8'>Acesso restrito a gestores e administradores</div>";
-  var p=window._relPeriod||"mensal";
+  var period=window._relPeriod||"mensal";
   var tf=window._relTech||"todos";
-  var r=getDR(p);
+  var r=getDR(period);
   var s=r.s,e=r.e;
   var pl={diario:"Hoje - "+s.toLocaleDateString("pt-BR"),semanal:"Semana: "+s.toLocaleDateString("pt-BR")+" a "+e.toLocaleDateString("pt-BR"),mensal:s.toLocaleDateString("pt-BR",{month:"long",year:"numeric"}),personalizado:(window._relCS||"")+" a "+(window._relCE||"")};
   var stats=[];
@@ -4476,7 +4476,7 @@ function rRelatorios(){
   window._relStats = stats;
   window._relOrders = orders;
   window._relClientes = clientes;
-  window._relPeriod = p; window._relPeriodVal = p; // compat
+  window._relPeriod = period; window._relPeriodVal = period; // compat
   return h;
 }
 
