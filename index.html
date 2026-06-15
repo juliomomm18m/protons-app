@@ -3335,6 +3335,7 @@ window.render = function render(){
   relPeriodBtns.forEach(function(btn){
     btn.addEventListener("click",function(){
       var period = this.dataset.period;
+      var scrollY = window.scrollY;
       if(period && period.startsWith("__svctype__")){
         window._relSvcType = period.replace("__svctype__","");
       } else if(period && period.startsWith("__svctech__")){
@@ -3343,11 +3344,27 @@ window.render = function render(){
         window._relPeriod = period;
       }
       render();
+      // Restore scroll position and ensure charts render in view
+      requestAnimationFrame(function(){
+        window.scrollTo(0, scrollY);
+        setTimeout(function(){
+          if(window.initRelCharts) window.initRelCharts();
+          window.scrollTo(0, scrollY);
+        }, 100);
+      });
     });
   });
   const relTechBtns = mc.querySelectorAll(".rel-tech-btn");
   relTechBtns.forEach(function(btn){
-    btn.addEventListener("click",function(){ window._relTech=this.dataset.tech; render(); });
+    btn.addEventListener("click",function(){
+      var scrollY = window.scrollY;
+      window._relTech=this.dataset.tech;
+      render();
+      requestAnimationFrame(function(){
+        window.scrollTo(0, scrollY);
+        setTimeout(function(){ if(window.initRelCharts) window.initRelCharts(); window.scrollTo(0, scrollY); }, 100);
+      });
+    });
   });
 }
 
