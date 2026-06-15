@@ -4440,6 +4440,29 @@ function rRelatorios(){
     h += "</div>";
     h += "<div style='font-size:10px;color:#8A95A8;text-align:center;margin-top:8px'>Total: "+total_sched+" OS com data agendada concluídas</div>";
   }
+
+  // Lista das OS atrasadas
+  if(late > 0){
+    var lateOS = osComSchedule.filter(function(o){
+      var lx = (o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});
+      if(!lx.length) return false;
+      return lx[lx.length-1].date > o.scheduledDate;
+    });
+    h += "<div style=\'margin-top:12px;border-top:1px solid #DDE1EC;padding-top:10px;\'>";
+    h += "<div style=\'font-size:10px;font-weight:700;text-transform:uppercase;color:#E03030;margin-bottom:8px;\'>⚠️ Concluídas com Atraso</div>";
+    lateOS.forEach(function(o){
+      var lx = (o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});
+      var execDate = lx[lx.length-1].date;
+      var dias = Math.round((new Date(execDate+"T12:00:00") - new Date(o.scheduledDate+"T12:00:00"))/(864e5));
+      var t2 = TEAMS[o.team];
+      h += "<div style=\'display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F0F2F7;\'>";
+      h += "<div><div style=\'font-size:12px;font-weight:700;color:#1A2340;\'>"+(o.osNumber||"OS")+" — "+(o.client||"")+"</div>";
+      h += "<div style=\'font-size:10px;color:#8A95A8;margin-top:1px;\'>Agendado "+o.scheduledDate+" · Realizado "+execDate+(t2?" · "+t2.tech:"")+"</div></div>";
+      h += "<span style=\'font-size:11px;font-weight:700;color:#E03030;background:#FFF0F0;padding:3px 8px;border-radius:5px;\'>+"+dias+"d</span>";
+      h += "</div>";
+    });
+    h += "</div>";
+  }
   h += "</div>";
 
   // Card: OS por tipo de serviço
