@@ -576,7 +576,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
   <div class="mhdr">
     <div><div style="font-size:15px;font-weight:800;color:#1A2C7A;">📝 Adicionar Observação</div>
     <div id="obs-modal-sub" style="font-size:10px;color:#8A95A8;margin-top:2px;"></div></div>
-    <button onclick="closeM('obs-modal')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
+    <button onclick="window._obsPhotos=[];closeM('obs-modal')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#8A95A8;">×</button>
   </div>
   <div class="mbdy" style="display:flex;flex-direction:column;gap:12px;">
     <div id="obs-existing" style="display:none;background:#F8F9FC;border:1px solid #DDE1EC;border-radius:9px;padding:12px;">
@@ -600,7 +600,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
     </div>
   </div>
   <div class="mftr">
-    <button class="bcancel" onclick="closeM('obs-modal')">Cancelar</button>
+    <button class="bcancel" onclick="window._obsPhotos=[];closeM('obs-modal')">Cancelar</button>
     <button class="bsave" onclick="saveObs()">Salvar Observação</button>
   </div>
 </div></div>
@@ -1634,7 +1634,7 @@ window.showModal = function(id){
     }
   }
 };
-function gv(id){return g(id).value;}
+function gv(id){const el=g(id);return el?el.value:"";}
 window.sv=function sv(id,v){const el=document.getElementById(id);if(el)el.value=v||"";}
 
 window.saveOS=async function(){
@@ -1679,6 +1679,7 @@ window.delOS=async function(id){
 window.saveTime=async function(){
   const as=gv("tas")||null, ae=gv("tae")||null;
   const markDone = document.getElementById("t-mark-done")?.checked||false;
+  if(!as && !ae && !markDone){ toast("Registre pelo menos o horário de início",false); return; }
   const o = orders.find(x=>x.id===timeId); if(!o) return;
 
   const today2 = tstr();
@@ -3024,6 +3025,7 @@ window.aprovarOrc = async function(id){
 };
 
 window.editOrc = async function(id){
+  closeM("orc-detail");
   const orc = orcamentos.find(x=>x.id===id);
   if(!orc) return;
   editOrcId = id;
@@ -3196,6 +3198,7 @@ window.renderSearch = function(inputEl){
 };
 
 window.render = function render(){
+  if(!currentUser||!userProfile) return;
   const mc=g("mc");
   mc.style.overflowX = "hidden";
   mc.style.maxWidth = "100%";
