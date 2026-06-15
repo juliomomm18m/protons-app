@@ -1666,6 +1666,22 @@ window.sv=function sv(id,v){const el=document.getElementById(id);if(el)el.value=
 window.saveOS=async function(){
   const cl=gv("fc").trim(),ad=gv("fa").trim(),co=gv("fct").trim();
   if(!cl||!ad||!co){toast("Preencha cliente, endereço e contato",false);return;}
+
+  // Check for open OS from same client (only for new OS, not edits)
+  if(!editId){
+    const openOS = orders.filter(o=>
+      (o.client||"").toLowerCase()===cl.toLowerCase() &&
+      o.status!=="Concluída" && o.status!=="Cancelada"
+    );
+    if(openOS.length > 0){
+      const osList = openOS.map(o=>`  • ${o.osNumber||o.id} — ${o.status} (${o.service||""})`).join("\n");
+      const proceed = confirm(
+        `⚠️ Este cliente já possui ${openOS.length} OS aberta(s):\n\n${osList}\n\nDeseja criar uma nova OS mesmo assim?`
+      );
+      if(!proceed) return;
+    }
+  }
+
   const serv=gv("fs"),tp=gv("ft");
   // Generate sequential OS number (only for new OS, not edits)
   let osNumber;
