@@ -361,7 +361,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
   // Show address selector if client has a secondary address
   var btns = document.getElementById('fa-addr-btns');
   if(btns){
-    var hasAddr2 = c.street2 || c.fullAddress2;
+    var hasAddr2 = c.street2 || c.hood2 || c.city2 || c.fullAddress2 || c.addr2ref;
     btns.style.display = hasAddr2 ? 'flex' : 'none';
     if(hasAddr2){
       document.getElementById('btn-addr-pri').style.background='#EEF3FF';
@@ -374,13 +374,11 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
         </div>
       </div>
       <div class="fg" style="grid-column:1/-1">
-        <label style="display:flex;align-items:center;justify-content:space-between;">
-          <span>Endereço</span>
-          <div id="fa-addr-btns" style="display:none;gap:6px;">
-            <button type="button" id="btn-addr-pri" onclick="setOsAddr('primary')" style="padding:3px 8px;border-radius:5px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:10px;font-weight:700;">📍 Principal</button>
-            <button type="button" id="btn-addr-sec" onclick="setOsAddr('secondary')" style="padding:3px 8px;border-radius:5px;border:1px solid #DDE1EC;background:#F5F7FA;color:#8A95A8;cursor:pointer;font-size:10px;font-weight:700;">📍 Secundário</button>
-          </div>
-        </label>
+        <label>Endereço</label>
+        <div id="fa-addr-btns" style="display:none;gap:6px;margin-bottom:7px;">
+          <button type="button" id="btn-addr-pri" onclick="setOsAddr('primary')" style="flex:1;padding:7px 10px;border-radius:7px;border:2px solid #1A2C7A;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:11px;font-weight:700;transition:all .15s;">📍 Endereço Principal</button>
+          <button type="button" id="btn-addr-sec" onclick="setOsAddr('secondary')" style="flex:1;padding:7px 10px;border-radius:7px;border:2px solid #DDE1EC;background:#F5F7FA;color:#8A95A8;cursor:pointer;font-size:11px;font-weight:700;transition:all .15s;">📍 Endereço Secundário</button>
+        </div>
         <input type="text" id="fa" placeholder="Rua, número, bairro"/>
       </div>
       <div class="fg"><label>Contato</label><input type="text" id="fct" placeholder="(47) 99999-0000"/></div>
@@ -2361,20 +2359,18 @@ window.setNowField = function(id){
 window.setOsAddr = function(type){
   var c = window._osCli;
   if(!c) return;
+  var pri = document.getElementById('btn-addr-pri');
+  var sec = document.getElementById('btn-addr-sec');
   if(type === 'primary'){
     var addr = c.fullAddress || [c.street,c.hood,c.city,c.state].filter(Boolean).join(', ');
     document.getElementById('fa').value = addr || '';
-    document.getElementById('btn-addr-pri').style.background='#EEF3FF';
-    document.getElementById('btn-addr-pri').style.color='#1A2C7A';
-    document.getElementById('btn-addr-sec').style.background='#F5F7FA';
-    document.getElementById('btn-addr-sec').style.color='#8A95A8';
+    if(pri){ pri.style.background='#1A2C7A'; pri.style.color='#fff'; pri.style.borderColor='#1A2C7A'; }
+    if(sec){ sec.style.background='#F5F7FA'; sec.style.color='#8A95A8'; sec.style.borderColor='#DDE1EC'; }
   } else {
     var addr2 = [c.street2,c.hood2,c.city2,c.state2].filter(Boolean).join(', ');
     document.getElementById('fa').value = addr2 || c.addr2ref || '';
-    document.getElementById('btn-addr-sec').style.background='#EEF3FF';
-    document.getElementById('btn-addr-sec').style.color='#1A2C7A';
-    document.getElementById('btn-addr-pri').style.background='#F5F7FA';
-    document.getElementById('btn-addr-pri').style.color='#8A95A8';
+    if(sec){ sec.style.background='#1A2C7A'; sec.style.color='#fff'; sec.style.borderColor='#1A2C7A'; }
+    if(pri){ pri.style.background='#F5F7FA'; pri.style.color='#8A95A8'; pri.style.borderColor='#DDE1EC'; }
   }
 };
 window.setView=function(v){
