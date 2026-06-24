@@ -141,6 +141,10 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
     --modal-bg: #22272B;
     --tag-bg: #282E33;
     --muted: #8696A0;
+    --green: #4BCE97;
+    --red: #F87168;
+    --amber: #F5CD47;
+    --orange: #FEA362;
   }
   body { background: var(--bg); color: var(--text); }
   header { background: var(--header-bg); border-color: var(--border); }
@@ -3864,7 +3868,7 @@ function rCal(){
         <option value="Concluída" ${cs==="Concluída"?"selected":""}>✅ Concluída</option>
         <option value="Cancelada" ${cs==="Cancelada"?"selected":""}>❌ Cancelada</option>
       </select>
-      ${(ct!=="todos"||cs!=="todos")?`<button onclick="window._calTech='todos';window._calStatus='todos';render()" style="padding:6px 12px;border-radius:8px;border:1px solid #F0C8A8;background:var(--surface2);color:#E03030;cursor:pointer;font-size:11px;font-weight:700;">✕ Limpar</button>`:""}
+      ${(ct!=="todos"||cs!=="todos")?`<button onclick="window._calTech='todos';window._calStatus='todos';render()" style="padding:6px 12px;border-radius:8px;border:1px solid #F0C8A8;background:var(--surface2);color:var(--red);cursor:pointer;font-size:11px;font-weight:700;">✕ Limpar</button>`:""}
       <span style="font-size:11px;color:var(--text2);margin-left:auto;">${baseOrdCal.length} OS</span>
     </div>`;
   }
@@ -3895,7 +3899,7 @@ function rCal(){
   </div><div style="padding:14px;max-height:570px;overflow-y:auto;">`;
   if(!selO.length){
     panel+=`<div style="text-align:center;padding:40px 20px;color:var(--text2)"><div style="font-size:36px;margin-bottom:10px">📅</div><div style="font-size:13px;font-weight:600;color:var(--text)">Nenhum serviço neste dia</div>
-    ${selDate?`<button data-fn="new" data-id="${selDate}" style="margin-top:12px;padding:8px 18px;border-radius:8px;border:1px solid #A0CAEF;background:var(--surface2);color:#5B9EEF;cursor:pointer;font-size:12px;font-weight:700;">Agendar OS</button>`:""}</div>`;
+    ${selDate?`<button data-fn="new" data-id="${selDate}" style="margin-top:12px;padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:#5B9EEF;cursor:pointer;font-size:12px;font-weight:700;">Agendar OS</button>`:""}</div>`;
   }else{
     panel+=`<div style="position:relative"><div style="position:absolute;left:16px;top:0;bottom:0;width:1px;background:var(--border)"></div>`;
     for(const o of selO){
@@ -3910,33 +3914,33 @@ function rCal(){
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
             ${o.scheduledStart?`<span class="tag" style="background:var(--surface2);color:var(--navy);font-family:JetBrains Mono,monospace">📅 ${o.scheduledStart} – ${o.scheduledEnd||"?"}</span>`:""}
             ${t?`<span style="font-size:10px;color:${t.color};font-weight:600">👷 ${t.tech}</span>`:""}
-            ${o.helper?`<span style="font-size:10px;color:#E8A000;font-weight:600">🔧 ${o.helper}</span>`:""}
+            ${o.helper?`<span style="font-size:10px;color:var(--amber);font-weight:600">🔧 ${o.helper}</span>`:""}
           </div>
           ${o.execLog&&o.execLog.length?`
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-top:4px;">
             ${o.execLog.map(e=>{
               const dd=calcDur(e.start,e.end);
               const df=e.date?new Date(e.date+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}):"";
-              return `<div style="display:flex;gap:6px;align-items:center;font-size:10px;padding:2px 0;border-bottom:1px solid #EEE;">
+              return `<div style="display:flex;gap:6px;align-items:center;font-size:10px;padding:2px 0;border-bottom:1px solid var(--border);">
                 <span style="color:var(--text2);font-family:'JetBrains Mono',monospace;min-width:34px">${df}</span>
-                <span style="color:#1A9E4A;font-family:'JetBrains Mono',monospace">▶${e.start||"--"}</span>
+                <span style="color:var(--green);font-family:'JetBrains Mono',monospace">▶${e.start||"--"}</span>
                 <span style="color:var(--text2)">→</span>
-                <span style="color:#D45A1A;font-family:'JetBrains Mono',monospace">⏹${e.end||"--"}</span>
+                <span style="color:var(--orange);font-family:'JetBrains Mono',monospace">⏹${e.end||"--"}</span>
                 ${dd?`<span style="color:var(--navy);font-weight:600;margin-left:auto">${dd}</span>`:""}
               </div>`;
             }).join("")}
             ${o.totalMins?`<div style="font-size:10px;color:var(--text2);text-align:right;margin-top:4px;padding-top:4px;border-top:1px solid #DDE1EC;">Total: <span style="font-family:'JetBrains Mono',monospace;color:var(--navy);font-weight:700">${o.totalMins>=60?Math.floor(o.totalMins/60)+"h"+(o.totalMins%60?" "+o.totalMins%60+"min":""):o.totalMins+"min"}</span></div>`:""}
           </div>`:`
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-top:4px;">
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 9px;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:#4DB88A;margin-bottom:3px">▶ Início</div><div style="font-size:13px;font-weight:700;font-family:JetBrains Mono,monospace;color:var(--text2)">--:--</div></div>
-            <div style="background:var(--surface2);border:1px solid #F0C8A8;border-radius:7px;padding:7px 9px;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:#E0895A;margin-bottom:3px">⏹ Término</div><div style="font-size:13px;font-weight:700;font-family:JetBrains Mono,monospace;color:var(--text2)">--:--</div></div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 9px;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--green);margin-bottom:3px">▶ Início</div><div style="font-size:13px;font-weight:700;font-family:JetBrains Mono,monospace;color:var(--text2)">--:--</div></div>
+            <div style="background:var(--surface2);border:1px solid #F0C8A8;border-radius:7px;padding:7px 9px;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--orange);margin-bottom:3px">⏹ Término</div><div style="font-size:13px;font-weight:700;font-family:JetBrains Mono,monospace;color:var(--text2)">--:--</div></div>
           </div>`}
           <button data-fn="detail" data-id="${o.id}" style="width:100%;margin-top:8px;padding:6px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--navy);cursor:pointer;font-size:11px;font-weight:700;">🔍 Ver Detalhes</button>
           ${canTime(o)?`<button data-fn="time" data-id="${o.id}" style="width:100%;margin-top:6px;padding:6px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--navy);cursor:pointer;font-size:11px;font-weight:700;">⏱ Registrar Horários</button>`:""}
-          ${canAddObs(o)&&(o.status==="Concluída"||o.status==="Cancelada")&&isField()?`<button data-fn="obs" data-id="${o.id}" style="width:100%;margin-top:6px;padding:6px;border-radius:7px;border:1px solid #F0DCA0;background:var(--surface2);color:#E8A000;cursor:pointer;font-size:11px;font-weight:700;">📝 Adicionar Observação</button>`:""}
+          ${canAddObs(o)&&(o.status==="Concluída"||o.status==="Cancelada")&&isField()?`<button data-fn="obs" data-id="${o.id}" style="width:100%;margin-top:6px;padding:6px;border-radius:7px;border:1px solid #F0DCA0;background:var(--surface2);color:var(--amber);cursor:pointer;font-size:11px;font-weight:700;">📝 Adicionar Observação</button>`:""}
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-top:6px;">
             <a href="${mapsUrl(o.address||'')}" target="_blank" style="padding:6px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--navy);text-decoration:none;font-size:11px;font-weight:700;text-align:center;">📍 Google Maps</a>
-            <a href="${waUrl(o.contact||'', waMsg(o,userProfile))}" target="_blank" style="padding:6px;border-radius:7px;border:1px solid #C8ECD7;background:var(--surface2);color:#1A9E4A;text-decoration:none;font-size:11px;font-weight:700;text-align:center;">💬 WhatsApp</a>
+            <a href="${waUrl(o.contact||'', waMsg(o,userProfile))}" target="_blank" style="padding:6px;border-radius:7px;border:1px solid #C8ECD7;background:var(--surface2);color:var(--green);text-decoration:none;font-size:11px;font-weight:700;text-align:center;">💬 WhatsApp</a>
           </div>
         </div></div>`;
     }
@@ -4113,7 +4117,7 @@ window.openNotifPanel = function(){
   saveNotifs();
   updateNotifBadge();
   if(!notifications.length){
-    list.innerHTML = "<div style='text-align:center;padding:30px;color:#8A95A8;font-size:12px'>Nenhuma notificação</div>";
+    list.innerHTML = "<div style='text-align:center;padding:30px;color:var(--text2);font-size:12px'>Nenhuma notificação</div>";
   } else {
     list.innerHTML = notifications.map(n=>`
       <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid #1A2C7A;border-radius:9px;padding:10px 12px;">
@@ -4405,64 +4409,64 @@ window.toggleTheme = function(){
 // Color map for dark mode: light hex -> dark hex
 var DARK_COLOR_MAP = [
   // Backgrounds
-  ["background:#fff;",      "background:#22272B;"],
-  ["background:#fff"",     "background:#22272B""],
-  ["background:#ffffff",    "background:#22272B"],
+  ["background:var(--surface);",      "background:#22272B;"],
+  ["background:var(--surface)"",     "background:#22272B""],
+  ["background:var(--surface)fff",    "background:#22272B"],
   ["background:white",      "background:#22272B"],
-  ["background:#F8F9FC",    "background:#282E33"],
-  ["background:#F0F2F7",    "background:#282E33"],
+  ["background:var(--surface2)",    "background:#282E33"],
+  ["background:var(--surface2)",    "background:#282E33"],
   ["background:#F3F4F7",    "background:#282E33"],
   ["background:#F5F7FA",    "background:#282E33"],
   ["background:#FAFAFA",    "background:#282E33"],
-  ["background:#EEF3FF",    "background:rgba(255,255,255,.06)"],
-  ["background:#EEF5FF",    "background:rgba(255,255,255,.05)"],
+  ["background:var(--surface2)",    "background:rgba(255,255,255,.06)"],
+  ["background:var(--surface2)",    "background:rgba(255,255,255,.05)"],
   ["background:#E8EEFF",    "background:rgba(255,255,255,.06)"],
-  ["background:#EDFBF3",    "background:rgba(75,206,151,.1)"],
-  ["background:#EBF8F1",    "background:rgba(75,206,151,.1)"],
+  ["background:var(--surface2)",    "background:rgba(75,206,151,.1)"],
+  ["background:var(--surface2)",    "background:rgba(75,206,151,.1)"],
   ["background:#C8ECD7",    "background:rgba(75,206,151,.15)"],
-  ["background:#D6F5E3",    "background:rgba(75,206,151,.15)"],
-  ["background:#FFF0F0",    "background:rgba(248,113,104,.1)"],
-  ["background:#FFF4EE",    "background:rgba(254,163,98,.1)"],
-  ["background:#FFFAEE",    "background:rgba(245,205,71,.08)"],
+  ["background:var(--surface2)",    "background:rgba(75,206,151,.15)"],
+  ["background:var(--surface2)",    "background:rgba(248,113,104,.1)"],
+  ["background:var(--surface2)",    "background:rgba(254,163,98,.1)"],
+  ["background:var(--surface2)",    "background:rgba(245,205,71,.08)"],
   ["background:#F0DCA0",    "background:rgba(245,205,71,.1)"],
   ["background:#F0C8A8",    "background:rgba(254,163,98,.1)"],
   ["background:#DDE1EC",    "background:#3D4B55"],
   ["background:#C2D0F0",    "background:#3D4B55"],
-  ["background:#B8E8CC",    "background:rgba(75,206,151,.12)"],
+  ["background:var(--surface2)",    "background:rgba(75,206,151,.12)"],
   ["background:#A0CAEF",    "background:rgba(255,255,255,.06)"],
   ["background:#EEE;",      "background:#3D4B55;"],
   ["background:#EEE"",     "background:#3D4B55""],
   ["background:#34D399",    "background:#4BCE97"],
   ["background:#FCD34D",    "background:#F5CD47"],
   // Borders
-  ["border:1px solid #DDE1EC",         "border:1px solid #3D4B55"],
-  ["border:1px solid #C2D0F0",         "border:1px solid #3D4B55"],
-  ["border:1px solid #B8E8CC",         "border:1px solid rgba(75,206,151,.3)"],
-  ["border:1px solid #A0CAEF",         "border:1px solid rgba(255,255,255,.2)"],
+  ["border:1px solid var(--border)",         "border:1px solid #3D4B55"],
+  ["border:1px solid var(--border)",         "border:1px solid #3D4B55"],
+  ["border:1px solid var(--border)",         "border:1px solid rgba(75,206,151,.3)"],
+  ["border:1px solid var(--border)",         "border:1px solid rgba(255,255,255,.2)"],
   ["border:1px solid #F0DCA0",         "border:1px solid rgba(245,205,71,.25)"],
   ["border:1px solid #EEE",            "border:1px solid #3D4B55"],
-  ["border-bottom:1px solid #EEE",     "border-bottom:1px solid #3D4B55"],
-  ["border-bottom:1px solid #DDE1EC",  "border-bottom:1px solid #3D4B55"],
-  ["border-bottom:1px solid #F0F2F7",  "border-bottom:1px solid #3D4B55"],
+  ["border-bottom:1px solid var(--border)",     "border-bottom:1px solid #3D4B55"],
+  ["border-bottom:1px solid var(--border)",  "border-bottom:1px solid #3D4B55"],
+  ["border-bottom:1px solid var(--border)",  "border-bottom:1px solid #3D4B55"],
   ["border-top:1px solid #DDE1EC",     "border-top:1px solid #3D4B55"],
   // Text colors
-  ["color:#1A2340",   "color:#B6C2CF"],
-  ["color:#1A2C7A",   "color:#E0E0E0"],
-  ["color:#8A95A8",   "color:#8696A0"],
+  ["color:var(--text)",   "color:#B6C2CF"],
+  ["color:var(--navy)",   "color:#E0E0E0"],
+  ["color:var(--text2)",   "color:#8696A0"],
   ["color:#555",      "color:#8696A0"],
-  ["color:#1E6FBF",   "color:#E0E0E0"],
-  ["color:#1A9E4A",   "color:#4BCE97"],
-  ["color:#E03030",   "color:#F87168"],
-  ["color:#E8A000",   "color:#F5CD47"],
-  ["color:#D45A1A",   "color:#FEA362"],
-  ["color:#7A3010",   "color:#FEA362"],
-  ["color:#1A6634",   "color:#4BCE97"],
-  ["color:#854F0B",   "color:#F5CD47"],
+  ["color:var(--navy)",   "color:#E0E0E0"],
+  ["color:var(--green)",   "color:#4BCE97"],
+  ["color:var(--red)",   "color:#F87168"],
+  ["color:var(--amber)",   "color:#F5CD47"],
+  ["color:var(--orange)",   "color:#FEA362"],
+  ["color:var(--orange)",   "color:#FEA362"],
+  ["color:var(--green)",   "color:#4BCE97"],
+  ["color:var(--amber)",   "color:#F5CD47"],
   ["color:#412402",   "color:#F5CD47"],
   ["color:#27500A",   "color:#4BCE97"],
   ["color:#3B6D11",   "color:#4BCE97"],
   ["color:#7C3AED",   "color:#9B7AEF"],
-  ["color:#CBD0DC",   "color:#8696A0"],
+  ["color:var(--text2)",   "color:#8696A0"],
   ["color:#6B48FF",   "color:#9B7AEF"],
   ["color:#34D399",   "color:#4BCE97"]
 ];
@@ -4505,7 +4509,7 @@ function inDR(ds,s,e){if(!ds)return false;var d=new Date(ds+"T12:00:00");return 
 function m2s(m){if(!m||m<=0)return "0min";return m>=60?Math.floor(m/60)+"h"+(m%60?" "+m%60+"min":""):m+"min";}
 
 function rRelatorios(){
-  if(!isGestorOrAdmin())return "<div style='text-align:center;padding:60px;color:#8A95A8'>Acesso restrito a gestores e administradores</div>";
+  if(!isGestorOrAdmin())return "<div style='text-align:center;padding:60px;color:var(--text2)'>Acesso restrito a gestores e administradores</div>";
   var period=window._relPeriod||"mensal";
   var tf=window._relTech||"todos";
   var svcTypeFilter=window._relSvcType||"todos";
@@ -4564,24 +4568,24 @@ function rRelatorios(){
   // ── UNIFIED FILTER BAR ───────────────────────────────────────────────
   var periodLabels = {diario:"Hoje",semanal:"Semana",mensal:"Mês",personalizado:"Personalizado"};
   h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;'>";
-  h += "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;'><span style='font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8A95A8;font-weight:700;min-width:52px;'>Período</span>";
+  h += "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;'><span style='font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);font-weight:700;min-width:52px;'>Período</span>";
   ["diario","semanal","mensal","personalizado"].forEach(function(pp){
     var a=period===pp;
     h += "<button class='rel-period-btn' data-period='"+pp+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?"#1A2C7A":"#DDE1EC")+";background:"+(a?"#E8EEFF":"transparent")+";color:"+(a?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+periodLabels[pp]+"</button>";
   });
   if(period==="personalizado"){
-    h += "<input type='date' value='"+(window._relCS||"")+"' onchange=\"window._relCS=this.value;render()\" style='padding:5px 8px;border-radius:7px;border:1px solid #DDE1EC;font-size:11px;outline:none;'/>";
-    h += "<input type='date' value='"+(window._relCE||"")+"' onchange=\"window._relCE=this.value;render()\" style='padding:5px 8px;border-radius:7px;border:1px solid #DDE1EC;font-size:11px;outline:none;'/>";
+    h += "<input type='date' value='"+(window._relCS||"")+"' onchange=\"window._relCS=this.value;render()\" style='padding:5px 8px;border-radius:7px;border:1px solid var(--border);font-size:11px;outline:none;'/>";
+    h += "<input type='date' value='"+(window._relCE||"")+"' onchange=\"window._relCE=this.value;render()\" style='padding:5px 8px;border-radius:7px;border:1px solid var(--border);font-size:11px;outline:none;'/>";
   }
   h += "</div>";
 
-  h += "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;'><span style='font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8A95A8;font-weight:700;min-width:52px;'>Técnico</span>";
+  h += "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;'><span style='font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);font-weight:700;min-width:52px;'>Técnico</span>";
   h += "<button class='rel-tech-btn' data-tech='todos' style='padding:5px 12px;border-radius:7px;border:1px solid "+(tf==="todos"?"#1A2C7A":"#DDE1EC")+";background:"+(tf==="todos"?"#E8EEFF":"transparent")+";color:"+(tf==="todos"?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>Todos</button>";
   Object.keys(TEAMS).forEach(function(tid){var t=TEAMS[tid];var a=tf===tid;h += "<button class='rel-tech-btn' data-tech='"+tid+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?t.color:"#DDE1EC")+";background:"+(a?t.color+"18":"transparent")+";color:"+(a?t.color:"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+t.tech+"</button>";});
   ["Tiago","Ramon"].forEach(function(hn){var a=tf===hn;h += "<button class='rel-tech-btn' data-tech='"+hn+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?"#E8A000":"#DDE1EC")+";background:"+(a?"#FFFAEE":"transparent")+";color:"+(a?"#E8A000":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+hn+"</button>";});
   h += "</div>";
 
-  h += "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;'><span style='font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8A95A8;font-weight:700;min-width:52px;'>Tipo OS</span>";
+  h += "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;'><span style='font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);font-weight:700;min-width:52px;'>Tipo OS</span>";
   [{v:"todos",l:"Todos"},{v:"Nova Instalação",l:"Nova Instalação"},{v:"Manutenção",l:"Manutenção"}].forEach(function(tp){
     var a=svcTypeFilter===tp.v;
     h += "<button class='rel-period-btn' data-period='__svctype__"+tp.v+"' style='padding:5px 12px;border-radius:7px;border:1px solid "+(a?"#1A2C7A":"#DDE1EC")+";background:"+(a?"#E8EEFF":"transparent")+";color:"+(a?"#1A2C7A":"#8A95A8")+";cursor:pointer;font-size:11px;font-weight:700;'>"+tp.l+"</button>";
@@ -4591,8 +4595,8 @@ function rRelatorios(){
   // ── KPI SUMMARY ──────────────────────────────────────────────────────
   h += "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;'>";
   h += "<div style='background:linear-gradient(135deg,#1A2C7A,#1E6FBF);border-radius:12px;padding:14px;text-align:center;'><div style='font-size:10px;color:rgba(255,255,255,.7);text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Total Horas</div><div style='font-size:26px;font-weight:800;color:#fff;font-family:JetBrains Mono,monospace;'>"+m2s(atm)+"</div></div>";
-  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;'><div style='font-size:10px;color:#8A95A8;text-transform:uppercase;font-weight:700;margin-bottom:4px;'>OS Realizadas</div><div style='font-size:26px;font-weight:800;color:#1A2C7A;font-family:JetBrains Mono,monospace;'>"+aos+"</div></div>";
-  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;'><div style='font-size:10px;color:#8A95A8;text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Valor Sugerido</div><div style='font-size:26px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace;'>R$ "+atv.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</div></div>";
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;'><div style='font-size:10px;color:var(--text2);text-transform:uppercase;font-weight:700;margin-bottom:4px;'>OS Realizadas</div><div style='font-size:26px;font-weight:800;color:var(--navy);font-family:JetBrains Mono,monospace;'>"+aos+"</div></div>";
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;'><div style='font-size:10px;color:var(--text2);text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Valor Sugerido</div><div style='font-size:26px;font-weight:800;color:var(--green);font-family:JetBrains Mono,monospace;'>R$ "+atv.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</div></div>";
   h += "</div>";
 
   // ── CHART SELECTOR ───────────────────────────────────────────────────
@@ -4611,16 +4615,16 @@ function rRelatorios(){
   h += "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;'>";
   h += "<div style='font-size:12px;font-weight:700;color:var(--text);'>Selecionar para impressão</div>";
   h += "<div style='display:flex;gap:8px;flex-wrap:wrap;'>";
-  h += "<button onclick=\"Object.keys(window._relSelCharts).forEach(function(k){window._relSelCharts[k]=true;});render();\" style='font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid #DDE1EC;background:transparent;color:#8A95A8;cursor:pointer;'>Todos</button>";
-  h += "<button onclick=\"Object.keys(window._relSelCharts).forEach(function(k){window._relSelCharts[k]=false;});render();\" style='font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid #DDE1EC;background:transparent;color:#8A95A8;cursor:pointer;'>Nenhum</button>";
+  h += "<button onclick=\"Object.keys(window._relSelCharts).forEach(function(k){window._relSelCharts[k]=true;});render();\" style='font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;'>Todos</button>";
+  h += "<button onclick=\"Object.keys(window._relSelCharts).forEach(function(k){window._relSelCharts[k]=false;});render();\" style='font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;'>Nenhum</button>";
   h += "<button onclick=\"exportRelPDFSelected()\" style='padding:5px 14px;border-radius:7px;border:none;background:#E03030;color:#fff;cursor:pointer;font-size:11px;font-weight:700;'>🖨️ Imprimir</button>";
   h += "</div></div>";
   h += "<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:8px;'>";
   chartDefs.forEach(function(cd){
     var chk = selCharts[cd.id] ? "checked" : "";
-    h += "<label style='display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid #DDE1EC;cursor:pointer;'>";
-    h += "<input type='checkbox' "+chk+" onchange=\"window._relSelCharts['"+cd.id+"']=this.checked;\" style='accent-color:#1A2C7A;width:15px;height:15px;cursor:pointer;'/>";
-    h += "<div><div style='font-size:11px;font-weight:700;color:var(--text);'>"+cd.label+"</div><div style='font-size:10px;color:#8A95A8;margin-top:1px;'>"+cd.sub+"</div></div></label>";
+    h += "<label style='display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer;'>";
+    h += "<input type='checkbox' "+chk+" onchange=\"window._relSelCharts['"+cd.id+"']=this.checked;\" style='accent-color:var(--navy);width:15px;height:15px;cursor:pointer;'/>";
+    h += "<div><div style='font-size:11px;font-weight:700;color:var(--text);'>"+cd.label+"</div><div style='font-size:10px;color:var(--text2);margin-top:1px;'>"+cd.sub+"</div></div></label>";
   });
   h += "</div></div>";
 
@@ -4652,12 +4656,12 @@ function rRelatorios(){
     window._svcAvgData=svcEntries.map(function(e,i){return{svc:e.svc,avg:e.avg,count:e.count,color:barColors[i%barColors.length]};});
     h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;'>";
     h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px;'>⏱ Tempo Médio por Tipo de Serviço</div>";
-    if(svcEntries.length===0){h+="<div style='text-align:center;padding:30px;color:#8A95A8;font-size:13px;'>Sem OS concluídas com tempo registrado</div>";}
+    if(svcEntries.length===0){h+="<div style='text-align:center;padding:30px;color:var(--text2);font-size:13px;'>Sem OS concluídas com tempo registrado</div>";}
     else{
       var canvasH=Math.max(160,svcEntries.length*44+40);
       h+="<canvas id='chart-svc-avg' height='"+canvasH+"'></canvas>";
       h+="<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:14px;'>";
-      svcEntries.forEach(function(e,i){var col=barColors[i%barColors.length];var avgStr=e.avg>=60?Math.floor(e.avg/60)+"h"+(e.avg%60?" "+e.avg%60+"min":""):e.avg+"min";h+="<div style='background:var(--surface2);border:1px solid #DDE1EC;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;'><div><div style='font-size:11px;font-weight:700;color:#1A2340;'>"+e.svc+"</div><div style='font-size:10px;color:#8A95A8;margin-top:2px;'>"+e.count+" OS</div></div><div style='font-size:15px;font-weight:800;color:"+col+";font-family:JetBrains Mono,monospace;'>"+avgStr+"</div></div>";});
+      svcEntries.forEach(function(e,i){var col=barColors[i%barColors.length];var avgStr=e.avg>=60?Math.floor(e.avg/60)+"h"+(e.avg%60?" "+e.avg%60+"min":""):e.avg+"min";h+="<div style='background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;'><div><div style='font-size:11px;font-weight:700;color:var(--text);'>"+e.svc+"</div><div style='font-size:10px;color:var(--text2);margin-top:2px;'>"+e.count+" OS</div></div><div style='font-size:15px;font-weight:800;color:"+col+";font-family:JetBrains Mono,monospace;'>"+avgStr+"</div></div>";});
       h+="</div>";
     }
     h+="</div>";
@@ -4677,18 +4681,18 @@ function rRelatorios(){
     h+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;'>";
     h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;'>";
     h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:16px;letter-spacing:.8px;'>✅ Taxa de Conclusão no Prazo</div>";
-    if(pct===null){h+="<div style='text-align:center;padding:20px 0;color:#8A95A8;font-size:13px;'>Sem dados</div>";}
+    if(pct===null){h+="<div style='text-align:center;padding:20px 0;color:var(--text2);font-size:13px;'>Sem dados</div>";}
     else{
-      h+="<div style='text-align:center;margin-bottom:16px;'><div style='font-size:52px;font-weight:800;color:"+gc+";font-family:JetBrains Mono,monospace;line-height:1;'>"+pct+"%</div><div style='font-size:12px;color:#8A95A8;margin-top:6px;'>concluídas no prazo</div></div>";
-      h+="<div style='background:#F0F2F7;border-radius:8px;height:10px;margin-bottom:12px;overflow:hidden;'><div style='background:"+gc+";width:"+pct+"%;height:100%;border-radius:8px;'></div></div>";
-      h+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;'><div style='background:#EDFBF3;border-radius:8px;padding:10px;text-align:center;'><div style='font-size:10px;color:#1A9E4A;font-weight:700;text-transform:uppercase;'>No prazo</div><div style='font-size:20px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace;'>"+oT+"</div></div><div style='background:#FFF0F0;border-radius:8px;padding:10px;text-align:center;'><div style='font-size:10px;color:#E03030;font-weight:700;text-transform:uppercase;'>Atrasadas</div><div style='font-size:20px;font-weight:800;color:#E03030;font-family:JetBrains Mono,monospace;'>"+lT+"</div></div></div>";
-      h+="<div style='font-size:10px;color:#8A95A8;text-align:center;margin-top:8px;'>Total: "+tsched+" OS</div>";
-      if(lT>0){var lateOS2=osCS.filter(function(o){var lx=(o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});if(!lx.length)return false;return lx[lx.length-1].date>o.scheduledDate;});h+="<div style='margin-top:12px;border-top:1px solid #DDE1EC;padding-top:10px;'><div style='font-size:10px;font-weight:700;text-transform:uppercase;color:#E03030;margin-bottom:8px;'>⚠️ Concluídas com Atraso</div>";lateOS2.forEach(function(o){var lx=(o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});var ed=lx[lx.length-1].date;var dias=Math.round((new Date(ed+"T12:00:00")-new Date(o.scheduledDate+"T12:00:00"))/864e5);var t2=TEAMS[o.team];h+="<div style='display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F0F2F7;'><div><div style='font-size:12px;font-weight:700;color:#1A2340;'>"+(o.osNumber||"OS")+" — "+(o.client||"")+"</div><div style='font-size:10px;color:#8A95A8;margin-top:1px;'>Agendado "+o.scheduledDate+" · Realizado "+ed+(t2?" · "+t2.tech:"")+"</div></div><span style='font-size:11px;font-weight:700;color:#E03030;background:#FFF0F0;padding:3px 8px;border-radius:5px;'>+"+dias+"d</span></div>";});h+="</div>";}
+      h+="<div style='text-align:center;margin-bottom:16px;'><div style='font-size:52px;font-weight:800;color:"+gc+";font-family:JetBrains Mono,monospace;line-height:1;'>"+pct+"%</div><div style='font-size:12px;color:var(--text2);margin-top:6px;'>concluídas no prazo</div></div>";
+      h+="<div style='background:var(--surface2);border-radius:8px;height:10px;margin-bottom:12px;overflow:hidden;'><div style='background:"+gc+";width:"+pct+"%;height:100%;border-radius:8px;'></div></div>";
+      h+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;'><div style='background:var(--surface2);border-radius:8px;padding:10px;text-align:center;'><div style='font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;'>No prazo</div><div style='font-size:20px;font-weight:800;color:var(--green);font-family:JetBrains Mono,monospace;'>"+oT+"</div></div><div style='background:var(--surface2);border-radius:8px;padding:10px;text-align:center;'><div style='font-size:10px;color:var(--red);font-weight:700;text-transform:uppercase;'>Atrasadas</div><div style='font-size:20px;font-weight:800;color:var(--red);font-family:JetBrains Mono,monospace;'>"+lT+"</div></div></div>";
+      h+="<div style='font-size:10px;color:var(--text2);text-align:center;margin-top:8px;'>Total: "+tsched+" OS</div>";
+      if(lT>0){var lateOS2=osCS.filter(function(o){var lx=(o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});if(!lx.length)return false;return lx[lx.length-1].date>o.scheduledDate;});h+="<div style='margin-top:12px;border-top:1px solid #DDE1EC;padding-top:10px;'><div style='font-size:10px;font-weight:700;text-transform:uppercase;color:var(--red);margin-bottom:8px;'>⚠️ Concluídas com Atraso</div>";lateOS2.forEach(function(o){var lx=(o.execLog||[]).filter(function(ex){return ex.start&&ex.end;});var ed=lx[lx.length-1].date;var dias=Math.round((new Date(ed+"T12:00:00")-new Date(o.scheduledDate+"T12:00:00"))/864e5);var t2=TEAMS[o.team];h+="<div style='display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);'><div><div style='font-size:12px;font-weight:700;color:var(--text);'>"+(o.osNumber||"OS")+" — "+(o.client||"")+"</div><div style='font-size:10px;color:var(--text2);margin-top:1px;'>Agendado "+o.scheduledDate+" · Realizado "+ed+(t2?" · "+t2.tech:"")+"</div></div><span style='font-size:11px;font-weight:700;color:var(--red);background:var(--surface2);padding:3px 8px;border-radius:5px;'>+"+dias+"d</span></div>";});h+="</div>";}
     }
     h+="</div>";
     h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;'>";
     h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:12px;letter-spacing:.8px;'>🔧 OS por Tipo de Serviço</div>";
-    svcE2.forEach(function(entry,idx){var svc=entry[0],cnt=entry[1],pct2=Math.round(cnt/totSvcOS*100),col=sc2[idx%sc2.length];h+="<div style='margin-bottom:10px;'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'><div style='font-size:12px;font-weight:600;color:var(--text);'>"+svc+"</div><div style='display:flex;align-items:center;gap:8px;'><span style='font-size:11px;color:#8A95A8;'>"+cnt+" OS</span><span style='font-size:11px;font-weight:700;color:"+col+";'>"+pct2+"%</span></div></div><div style='background:#F0F2F7;border-radius:4px;height:6px;overflow:hidden;'><div style='background:"+col+";width:"+pct2+"%;height:100%;border-radius:4px;'></div></div></div>";});
+    svcE2.forEach(function(entry,idx){var svc=entry[0],cnt=entry[1],pct2=Math.round(cnt/totSvcOS*100),col=sc2[idx%sc2.length];h+="<div style='margin-bottom:10px;'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'><div style='font-size:12px;font-weight:600;color:var(--text);'>"+svc+"</div><div style='display:flex;align-items:center;gap:8px;'><span style='font-size:11px;color:var(--text2);'>"+cnt+" OS</span><span style='font-size:11px;font-weight:700;color:"+col+";'>"+pct2+"%</span></div></div><div style='background:var(--surface2);border-radius:4px;height:6px;overflow:hidden;'><div style='background:"+col+";width:"+pct2+"%;height:100%;border-radius:4px;'></div></div></div>";});
     h+="</div></div>";
   }
 
@@ -4703,9 +4707,9 @@ function rRelatorios(){
     h+="<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:16px;letter-spacing:.8px;'>💰 Receita Consolidada — últimos 6 meses</div>";
     h+="<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;'>";
     h+="<div style='background:linear-gradient(135deg,#1A2C7A,#1E6FBF);border-radius:10px;padding:12px;text-align:center;'><div style='font-size:9px;color:rgba(255,255,255,.7);text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Este mês</div><div style='font-size:18px;font-weight:800;color:#fff;font-family:JetBrains Mono,monospace;'>R$ "+Math.round(curM.total).toLocaleString("pt-BR")+"</div></div>";
-    h+="<div style='background:#EDFBF3;border:1px solid #B8E8CC;border-radius:10px;padding:12px;text-align:center;'><div style='font-size:9px;color:#1A9E4A;text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Recorrente 6m</div><div style='font-size:18px;font-weight:800;color:#1A9E4A;font-family:JetBrains Mono,monospace;'>R$ "+Math.round(tRec).toLocaleString("pt-BR")+"</div></div>";
-    h+="<div style='background:#EEF5FF;border:1px solid #A0CAEF;border-radius:10px;padding:12px;text-align:center;'><div style='font-size:9px;color:#1E6FBF;text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Mão de obra 6m</div><div style='font-size:18px;font-weight:800;color:#1E6FBF;font-family:JetBrains Mono,monospace;'>R$ "+Math.round(tLab).toLocaleString("pt-BR")+"</div></div>";
-    h+="<div style='background:#FFFAEE;border:1px solid #F0DCA0;border-radius:10px;padding:12px;text-align:center;'><div style='font-size:9px;color:#E8A000;text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Orçamentos 6m</div><div style='font-size:18px;font-weight:800;color:#E8A000;font-family:JetBrains Mono,monospace;'>R$ "+Math.round(tOrc).toLocaleString("pt-BR")+"</div></div>";
+    h+="<div style='background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;'><div style='font-size:9px;color:var(--green);text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Recorrente 6m</div><div style='font-size:18px;font-weight:800;color:var(--green);font-family:JetBrains Mono,monospace;'>R$ "+Math.round(tRec).toLocaleString("pt-BR")+"</div></div>";
+    h+="<div style='background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;'><div style='font-size:9px;color:var(--navy);text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Mão de obra 6m</div><div style='font-size:18px;font-weight:800;color:var(--navy);font-family:JetBrains Mono,monospace;'>R$ "+Math.round(tLab).toLocaleString("pt-BR")+"</div></div>";
+    h+="<div style='background:var(--surface2);border:1px solid #F0DCA0;border-radius:10px;padding:12px;text-align:center;'><div style='font-size:9px;color:var(--amber);text-transform:uppercase;font-weight:700;margin-bottom:4px;'>Orçamentos 6m</div><div style='font-size:18px;font-weight:800;color:var(--amber);font-family:JetBrains Mono,monospace;'>R$ "+Math.round(tOrc).toLocaleString("pt-BR")+"</div></div>";
     h+="</div><canvas id='chart-revenue-full' height='140'></canvas>";
     h+="<div style='display:flex;gap:16px;justify-content:center;margin-top:10px;'><div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);'><div style='width:12px;height:12px;background:#1A9E4A;border-radius:3px;'></div>Contratos/Alugueis</div><div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);'><div style='width:12px;height:12px;background:#1E6FBF;border-radius:3px;'></div>Mão de obra</div><div style='display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);'><div style='width:12px;height:12px;background:#E8A000;border-radius:3px;'></div>Orçamentos</div></div>";
     h+="</div>";
@@ -4717,13 +4721,13 @@ function rRelatorios(){
     stats.forEach(function(ts){
       var dd=Object.keys(ts.dm).sort();
       h+="<div style='background:var(--surface);border:1px solid var(--border);border-left:4px solid "+ts.col+";border-radius:12px;padding:18px 20px;'>";
-      h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;'><div><div style='font-size:16px;font-weight:800;color:"+ts.col+";'>"+ts.nm+"</div><div style='font-size:11px;color:#8A95A8;margin-top:2px;'>"+ts.team+" · "+(ts.role==="ajudante"?"Ajudante":"Técnico")+"</div></div><div style='text-align:right;'><div style='font-size:22px;font-weight:800;color:"+ts.col+";font-family:JetBrains Mono,monospace;'>"+m2s(ts.tm)+"</div><div style='font-size:11px;color:#8A95A8;margin-top:2px;'>"+ts.ol.length+" OS · R$ "+ts.tv.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</div></div></div>";
-      if(dd.length>0){h+="<div style='background:var(--surface2);border-radius:9px;padding:12px;margin-bottom:12px;'><div style='font-size:10px;color:#8A95A8;font-weight:700;text-transform:uppercase;margin-bottom:8px;'>Por Dia</div><div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;'>";dd.forEach(function(dt){var m=ts.dm[dt];var df=new Date(dt+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});var pct=Math.min(100,Math.round(m/480*100));h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center;'><div style='font-size:10px;color:#8A95A8;margin-bottom:4px;'>"+df+"</div><div style='font-size:15px;font-weight:800;color:"+ts.col+";font-family:JetBrains Mono,monospace;'>"+m2s(m)+"</div><div style='background:#F0F2F7;border-radius:3px;height:4px;margin-top:4px;'><div style='background:"+ts.col+";width:"+pct+"%;height:100%;border-radius:3px;'></div></div></div>";});h+="</div></div>";}
-      if(ts.ol.length>0){h+="<div><div style='font-size:10px;color:#8A95A8;font-weight:700;text-transform:uppercase;margin-bottom:8px;'>OS do Período</div>";ts.ol.forEach(function(item){var o=item.o;var sc=gsc(o.status);h+="<div style='display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #EEE;'><span style='font-size:11px;font-weight:700;color:#1A2C7A;font-family:JetBrains Mono,monospace;min-width:60px;'>"+(o.osNumber||"")+"</span><div style='flex:1;min-width:0;'><div style='font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>"+(o.client||"")+"</div><div style='font-size:10px;color:#8A95A8;'>"+(o.service||"")+"</div></div><span style='font-size:10px;color:"+ts.col+";font-weight:700;white-space:nowrap;font-family:JetBrains Mono,monospace;'>"+m2s(item.om)+"</span><span class='tag' style='background:"+sc.bg+";color:"+sc.c+";'>"+(o.status||"")+"</span>"+(item.ov?"<span style='font-size:10px;color:#1A9E4A;font-weight:700;white-space:nowrap;'>R$ "+item.ov.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</span>":"")+"</div>";});h+="</div>";}
-      else{h+="<div style='font-size:12px;color:#8A95A8;text-align:center;padding:10px 0;'>Nenhuma OS no período</div>";}
+      h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;'><div><div style='font-size:16px;font-weight:800;color:"+ts.col+";'>"+ts.nm+"</div><div style='font-size:11px;color:var(--text2);margin-top:2px;'>"+ts.team+" · "+(ts.role==="ajudante"?"Ajudante":"Técnico")+"</div></div><div style='text-align:right;'><div style='font-size:22px;font-weight:800;color:"+ts.col+";font-family:JetBrains Mono,monospace;'>"+m2s(ts.tm)+"</div><div style='font-size:11px;color:var(--text2);margin-top:2px;'>"+ts.ol.length+" OS · R$ "+ts.tv.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</div></div></div>";
+      if(dd.length>0){h+="<div style='background:var(--surface2);border-radius:9px;padding:12px;margin-bottom:12px;'><div style='font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;margin-bottom:8px;'>Por Dia</div><div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;'>";dd.forEach(function(dt){var m=ts.dm[dt];var df=new Date(dt+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});var pct=Math.min(100,Math.round(m/480*100));h+="<div style='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center;'><div style='font-size:10px;color:var(--text2);margin-bottom:4px;'>"+df+"</div><div style='font-size:15px;font-weight:800;color:"+ts.col+";font-family:JetBrains Mono,monospace;'>"+m2s(m)+"</div><div style='background:var(--surface2);border-radius:3px;height:4px;margin-top:4px;'><div style='background:"+ts.col+";width:"+pct+"%;height:100%;border-radius:3px;'></div></div></div>";});h+="</div></div>";}
+      if(ts.ol.length>0){h+="<div><div style='font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;margin-bottom:8px;'>OS do Período</div>";ts.ol.forEach(function(item){var o=item.o;var sc=gsc(o.status);h+="<div style='display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);'><span style='font-size:11px;font-weight:700;color:var(--navy);font-family:JetBrains Mono,monospace;min-width:60px;'>"+(o.osNumber||"")+"</span><div style='flex:1;min-width:0;'><div style='font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>"+(o.client||"")+"</div><div style='font-size:10px;color:var(--text2);'>"+(o.service||"")+"</div></div><span style='font-size:10px;color:"+ts.col+";font-weight:700;white-space:nowrap;font-family:JetBrains Mono,monospace;'>"+m2s(item.om)+"</span><span class='tag' style='background:"+sc.bg+";color:"+sc.c+";'>"+(o.status||"")+"</span>"+(item.ov?"<span style='font-size:10px;color:var(--green);font-weight:700;white-space:nowrap;'>R$ "+item.ov.toLocaleString("pt-BR",{minimumFractionDigits:2})+"</span>":"")+"</div>";});h+="</div>";}
+      else{h+="<div style='font-size:12px;color:var(--text2);text-align:center;padding:10px 0;'>Nenhuma OS no período</div>";}
       h+="</div>";
     });
-    if(stats.length===0)h+="<div style='text-align:center;padding:60px;color:#8A95A8;'><div style='font-size:36px;margin-bottom:10px;'>📊</div><div style='font-size:14px;font-weight:600;'>Nenhum dado no período</div></div>";
+    if(stats.length===0)h+="<div style='text-align:center;padding:60px;color:var(--text2);'><div style='font-size:36px;margin-bottom:10px;'>📊</div><div style='font-size:14px;font-weight:600;'>Nenhum dado no período</div></div>";
     h+="</div>";
   }
 
