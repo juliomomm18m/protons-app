@@ -3971,6 +3971,96 @@ function rCal(){
 }
 
 // AUTH STATE
+window.updateDrawer = function updateDrawer(){
+  if(!userProfile) return;
+  document.getElementById("drawer-name").textContent = userProfile.name||"";
+  document.getElementById("drawer-role").textContent = {admin:"Administrador",gestor:"Gestor",tecnico:"Técnico",ajudante:"Ajudante"}[userProfile.role]||"";
+  const field = isField();
+  // Nav items
+  const relBtn = document.getElementById("dnav-relatorios");
+  if(relBtn) relBtn.style.display = isAdmin() ? "flex" : "none";
+  ["dnav-dashboard","dnav-calendario","dnav-orcamentos","dnav-clientes"].forEach(id=>{
+    const btn = document.getElementById(id);
+    if(btn) btn.style.display = field ? "none" : "flex";
+  });
+  // Action buttons in drawer
+  const novaOs = document.getElementById("drawer-nova-os");
+  const solG = document.getElementById("drawer-sol-gestor");
+  const solF = document.getElementById("drawer-sol-field");
+  const notif = document.getElementById("drawer-notif");
+  if(novaOs) novaOs.style.display = isGestorOrAdmin() ? "flex" : "none";
+  if(solG) solG.style.display = isGestorOrAdmin() ? "flex" : "none";
+  if(solF) solF.style.display = field ? "flex" : "none";
+  if(notif) notif.style.display = isGestorOrAdmin() ? "flex" : "none";
+}
+
+// Sync sol badge to drawer
+function syncDrawerBadge(){
+  const pending = solicitacoes.filter(s=>s.status==="pendente"&&s.type!=="Solicitação de Orçamento").length;
+  const db2 = document.getElementById("drawer-sol-badge");
+  if(db2){ db2.textContent=pending; db2.style.display=pending>0?"inline":"none"; }
+  const nb = document.getElementById("drawer-notif-badge");
+  const unread = notifications.filter(n=>!n.read).length;
+  if(nb){ nb.textContent=unread; nb.style.display=unread>0?"inline":"none"; }
+}
+
+// Apply mobile layout on resize
+window.addEventListener("resize", function(){
+  if(!userProfile) return;
+  const isMobile = window.innerWidth <= 768;
+  const field = isField();
+  g("btn-new-os").style.display     = (!isMobile && isGestorOrAdmin()) ? "block" : "none";
+  g("btn-sol-gestor").style.display = (!isMobile && isGestorOrAdmin()) ? "flex"  : "none";
+  g("btn-sol-field").style.display  = (!isMobile && field) ? "block" : "none";
+  g("btn-notif").style.display      = (!isMobile && isGestorOrAdmin()) ? "flex"  : "none";
+  g("btn-theme").style.display      = isMobile ? "none" : "block";
+  const navEl = document.getElementById("main-nav");
+  if(navEl) navEl.style.display = isMobile ? "none" : "flex";
+  const menuBtn = document.getElementById("btn-menu");
+  if(menuBtn) menuBtn.style.display = isMobile ? "flex" : "none";
+  const hr = document.getElementById("header-right");
+  if(hr) hr.style.display = isMobile ? "none" : "flex";
+});
+
+// ── LEAFLET MAP PICKER ────────────────────────────────────────────────────
+let _leafletMap = null;
+let _leafletMarker = null;
+let _mapTarget = "primary"; // "primary" or "secondary"
+let _mapSelectedAddr = "";
+let _mapSelectedCoords = null;
+
+window.openMapPicker = function(target){
+  _mapTarget = target || "primary";
+  showModal("map-picker");
+  
+  setTimeout(function(){
+    if(!_leafletMap){
+      _leafletMap = L.map("map-container").setView([-28.2800, -49.1700], 14);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
+        maxZoom: 19
+      }).addTo(_leafletMap);
+      
+      // Click to place marker
+      _leafletMap.on("click", function(e){
+        placeMapMarker(e.latlng.lat, e.latlng.lng);
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
+      });
+    } else {
+      _leafletMap.invalidateSize();
+    }
+    
+    // Pre-fill with existing address if any
+    const existingAddr = target === "secondary" 
+      ? document.getElementById("cli-street2") && document.getElementById("cli-street2").value
+      : document.getElementById("cli-street") && document.getElementById("cli-street").value;
+    if(existingAddr){
+      document.getElementById("map-search-input").value = existingAddr;
+    }
+  }, 300);
+};
+
+
 onAuthStateChanged(auth, user => {
   if (user) {
     currentUser = user;
@@ -4237,94 +4327,6 @@ window.drawerNav = function(v){
   });
 };
 
-window.updateDrawer = function updateDrawer(){
-  if(!userProfile) return;
-  document.getElementById("drawer-name").textContent = userProfile.name||"";
-  document.getElementById("drawer-role").textContent = {admin:"Administrador",gestor:"Gestor",tecnico:"Técnico",ajudante:"Ajudante"}[userProfile.role]||"";
-  const field = isField();
-  // Nav items
-  const relBtn = document.getElementById("dnav-relatorios");
-  if(relBtn) relBtn.style.display = isAdmin() ? "flex" : "none";
-  ["dnav-dashboard","dnav-calendario","dnav-orcamentos","dnav-clientes"].forEach(id=>{
-    const btn = document.getElementById(id);
-    if(btn) btn.style.display = field ? "none" : "flex";
-  });
-  // Action buttons in drawer
-  const novaOs = document.getElementById("drawer-nova-os");
-  const solG = document.getElementById("drawer-sol-gestor");
-  const solF = document.getElementById("drawer-sol-field");
-  const notif = document.getElementById("drawer-notif");
-  if(novaOs) novaOs.style.display = isGestorOrAdmin() ? "flex" : "none";
-  if(solG) solG.style.display = isGestorOrAdmin() ? "flex" : "none";
-  if(solF) solF.style.display = field ? "flex" : "none";
-  if(notif) notif.style.display = isGestorOrAdmin() ? "flex" : "none";
-}
-
-// Sync sol badge to drawer
-function syncDrawerBadge(){
-  const pending = solicitacoes.filter(s=>s.status==="pendente"&&s.type!=="Solicitação de Orçamento").length;
-  const db2 = document.getElementById("drawer-sol-badge");
-  if(db2){ db2.textContent=pending; db2.style.display=pending>0?"inline":"none"; }
-  const nb = document.getElementById("drawer-notif-badge");
-  const unread = notifications.filter(n=>!n.read).length;
-  if(nb){ nb.textContent=unread; nb.style.display=unread>0?"inline":"none"; }
-}
-
-// Apply mobile layout on resize
-window.addEventListener("resize", function(){
-  if(!userProfile) return;
-  const isMobile = window.innerWidth <= 768;
-  const field = isField();
-  g("btn-new-os").style.display     = (!isMobile && isGestorOrAdmin()) ? "block" : "none";
-  g("btn-sol-gestor").style.display = (!isMobile && isGestorOrAdmin()) ? "flex"  : "none";
-  g("btn-sol-field").style.display  = (!isMobile && field) ? "block" : "none";
-  g("btn-notif").style.display      = (!isMobile && isGestorOrAdmin()) ? "flex"  : "none";
-  g("btn-theme").style.display      = isMobile ? "none" : "block";
-  const navEl = document.getElementById("main-nav");
-  if(navEl) navEl.style.display = isMobile ? "none" : "flex";
-  const menuBtn = document.getElementById("btn-menu");
-  if(menuBtn) menuBtn.style.display = isMobile ? "flex" : "none";
-  const hr = document.getElementById("header-right");
-  if(hr) hr.style.display = isMobile ? "none" : "flex";
-});
-
-// ── LEAFLET MAP PICKER ────────────────────────────────────────────────────
-let _leafletMap = null;
-let _leafletMarker = null;
-let _mapTarget = "primary"; // "primary" or "secondary"
-let _mapSelectedAddr = "";
-let _mapSelectedCoords = null;
-
-window.openMapPicker = function(target){
-  _mapTarget = target || "primary";
-  showModal("map-picker");
-  
-  setTimeout(function(){
-    if(!_leafletMap){
-      _leafletMap = L.map("map-container").setView([-28.2800, -49.1700], 14);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
-        maxZoom: 19
-      }).addTo(_leafletMap);
-      
-      // Click to place marker
-      _leafletMap.on("click", function(e){
-        placeMapMarker(e.latlng.lat, e.latlng.lng);
-        reverseGeocode(e.latlng.lat, e.latlng.lng);
-      });
-    } else {
-      _leafletMap.invalidateSize();
-    }
-    
-    // Pre-fill with existing address if any
-    const existingAddr = target === "secondary" 
-      ? document.getElementById("cli-street2") && document.getElementById("cli-street2").value
-      : document.getElementById("cli-street") && document.getElementById("cli-street").value;
-    if(existingAddr){
-      document.getElementById("map-search-input").value = existingAddr;
-    }
-  }, 300);
-};
 
 function placeMapMarker(lat, lng){
   if(_leafletMarker){
