@@ -4237,7 +4237,7 @@ window.drawerNav = function(v){
   });
 };
 
-function updateDrawer(){
+window.updateDrawer = function updateDrawer(){
   if(!userProfile) return;
   document.getElementById("drawer-name").textContent = userProfile.name||"";
   document.getElementById("drawer-role").textContent = {admin:"Administrador",gestor:"Gestor",tecnico:"Técnico",ajudante:"Ajudante"}[userProfile.role]||"";
