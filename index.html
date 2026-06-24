@@ -2453,6 +2453,31 @@ window.buscarOSOriginal = function(){
     });
   });
 };
+
+window.setView=function(v){
+  view=v;document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));render();
+};
+
+window.selecionarOSOriginal = function(id, num, cli, team, date){
+  document.getElementById('f-os-original-id').value = id;
+  var t = TEAMS[team];
+  document.getElementById('f-os-original-info').innerHTML =
+    '<span style="color:var(--navy);font-family:JetBrains Mono,monospace;">'+(num||id)+'</span>'
+    + ' — ' + (cli||'')
+    + '<span style="font-size:10px;color:var(--text2);margin-left:8px;">'+(t?t.tech:'')+' · '+(date||'')+'</span>';
+  document.getElementById('f-os-original-selected').style.display = 'block';
+  document.getElementById('f-os-original-results').innerHTML = '';
+  document.getElementById('f-os-original-search').value = '';
+  var orig = orders.find(function(o){ return o.id === id; });
+  if(orig){
+    sv('fc', orig.client||'');
+    sv('fa', orig.address||'');
+    sv('fct', orig.contact||'');
+    if(orig.team) sv('fte', orig.team);
+    if(orig.service) sv('fs', orig.service);
+  }
+};
+
 window.setCalM=function(dir){
   if(dir<0){if(calM===0){calM=11;calY--;}else calM--;}else{if(calM===11){calM=0;calY++;}else calM++;}render();
 };
