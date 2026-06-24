@@ -3976,9 +3976,14 @@ window.updateDrawer = function updateDrawer(){
   document.getElementById("drawer-name").textContent = userProfile.name||"";
   document.getElementById("drawer-role").textContent = {admin:"Administrador",gestor:"Gestor",tecnico:"Técnico",ajudante:"Ajudante"}[userProfile.role]||"";
   const field = isField();
-  // Nav items
+  // Header nav items
+  const hRelBtn = document.getElementById("nav-relatorios");
+  if(hRelBtn) hRelBtn.style.display = isGestorOrAdmin() ? "block" : "none";
+  const hRetBtn = document.getElementById("nav-retrabalho");
+  if(hRetBtn) hRetBtn.style.display = isGestorOrAdmin() ? "block" : "none";
+  // Drawer nav items
   const relBtn = document.getElementById("dnav-relatorios");
-  if(relBtn) relBtn.style.display = isAdmin() ? "flex" : "none";
+  if(relBtn) relBtn.style.display = isGestorOrAdmin() ? "flex" : "none";
   ["dnav-dashboard","dnav-calendario","dnav-orcamentos","dnav-clientes"].forEach(id=>{
     const btn = document.getElementById(id);
     if(btn) btn.style.display = field ? "none" : "flex";
@@ -4445,7 +4450,7 @@ function getDR(p){
 function inDR(ds,s,e){if(!ds)return false;var d=new Date(ds+"T12:00:00");return d>=s&&d<=e;}
 function m2s(m){if(!m||m<=0)return "0min";return m>=60?Math.floor(m/60)+"h"+(m%60?" "+m%60+"min":""):m+"min";}
 
-function rRelatorios(){
+window.rRelatorios = function rRelatorios(){
   if(!isAdmin())return "<div style='text-align:center;padding:60px;color:#8A95A8'>Acesso restrito a administradores</div>";
   var p=window._relPeriod||"mensal";
   var tf=window._relTech||"todos";
@@ -4633,7 +4638,7 @@ function rRelatorios(){
   return h;
 }
 
-function rRetrabalho(){
+window.rRetrabalho = function rRetrabalho(){
   if(!isGestorOrAdmin()) return "<div style='text-align:center;padding:60px;color:var(--text2);'>Acesso restrito</div>";
   var h = "<div style='margin-bottom:20px'>";
   h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;'>";
