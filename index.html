@@ -314,6 +314,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
       <button data-view="calendario" onclick="setView('calendario')" id="nav-calendario">Calendário</button>
       <button data-view="orcamentos" onclick="setView('orcamentos')" id="nav-orcamentos">Orçamentos</button>
       <button data-view="clientes" onclick="setView('clientes')" id="nav-clientes">Clientes</button>
+      <button data-view="retrabalho" onclick="setView('retrabalho')" id="nav-retrabalho" style="display:none;">Retrabalho</button>
       <button data-view="relatorios" onclick="setView('relatorios')" id="nav-relatorios" style="display:none;">Relatórios</button>
     </nav>
     <span id="current-view-label" style="display:none;"></span>
@@ -347,7 +348,11 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
   </div>
   <div class="mbdy">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:13px;">
-      <div class="fg"><label>Tipo</label><select id="ft" onchange="fchg()"><option>Manutenção</option><option>Nova Instalação</option></select></div>
+      <div class="fg"><label>Tipo</label><select id="ft" onchange="fchg()"><option>Manutenção</option><option>Nova Instalação</option><option>Corretiva</option></select></div>
+      <div class="fg" style="display:flex;align-items:center;gap:10px;padding-top:18px;">
+        <input type="checkbox" id="f-garantia" style="width:16px;height:16px;accent-color:#E8A000;cursor:pointer;" onchange="toggleGarantia(this.checked)"/>
+        <label for="f-garantia" style="font-size:13px;font-weight:600;color:#E8A000;cursor:pointer;margin:0;">⚠️ OS de Garantia</label>
+      </div>
       <div class="fg"><label>Prioridade</label><select id="fp"><option>Crítica</option><option>Alta</option><option selected>Média</option><option>Baixa</option></select></div>
       <div class="fg" style="grid-column:1/-1">
         <label>Cliente</label>
@@ -372,6 +377,19 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
   }
 })" style="padding:9px 12px;border-radius:8px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;">🔍 Buscar</button>
         </div>
+      </div>
+      <div id="garantia-block" style="display:none;grid-column:1/-1;background:#FFFAEE;border:1px solid #F0DCA0;border-radius:9px;padding:12px 14px;">
+        <div style="font-size:11px;font-weight:700;color:#E8A000;margin-bottom:8px;">⚠️ Vincular OS Original</div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="f-os-original-search" placeholder="Buscar por número (ex: OS-042) ou cliente..." style="flex:1;padding:8px 11px;border-radius:7px;border:1px solid #F0DCA0;font-size:12px;outline:none;font-family:'Syne',sans-serif;background:#fff;"/>
+          <button type="button" onclick="buscarOSOriginal()" style="padding:8px 14px;border-radius:7px;border:none;background:#E8A000;color:#fff;cursor:pointer;font-size:12px;font-weight:700;">🔍 Buscar</button>
+        </div>
+        <div id="f-os-original-results" style="margin-top:8px;max-height:160px;overflow-y:auto;"></div>
+        <div id="f-os-original-selected" style="display:none;margin-top:8px;background:#fff;border:1px solid #F0DCA0;border-radius:7px;padding:10px 12px;">
+          <div style="font-size:10px;color:#8A95A8;margin-bottom:3px;">OS Original Vinculada:</div>
+          <div id="f-os-original-info" style="font-size:13px;font-weight:700;color:#1A2340;"></div>
+        </div>
+        <input type="hidden" id="f-os-original-id"/>
       </div>
       <div class="fg" style="grid-column:1/-1">
         <label>Endereço</label>
@@ -1716,6 +1734,8 @@ window.saveOS=async function(){
     team:gv("fte")||null,helper:editId ? (gv("fh")||null) : (needsH(serv,tp)?(gv("fh")||null):null),
     scheduledDate:gv("fsd")||null,scheduledStart:gv("fss")||null,scheduledEnd:gv("fse")||null,
     actualStart:gv("fas")||null,actualEnd:gv("fae")||null,notes:gv("fn")||null,
+    isGarantia: document.getElementById('f-garantia')?.checked || false,
+    osOriginalId: document.getElementById('f-os-original-id')?.value || null,
     createdBy:userProfile?userProfile.name:"Sistema",
     osNumber};
   try{
@@ -2176,7 +2196,9 @@ window.openNew=function(date){
   editId=null;g("om-ttl").textContent="Nova Ordem de Serviço";
   sv("ft","Manutenção");sv("fp","Média");sv("fs","CFTV / Câmeras");sv("fst","Aguardando");sv("fte","");sv("fh","");
   ["fc","fa","fct","fn","fsd","fss","fse","fas","fae"].forEach(id=>sv(id,""));
-  window._osCli=null; var _ab=document.getElementById("fa-addr-btns"); if(_ab) _ab.style.display="none";
+  window._osCli=null;
+  var _ab=document.getElementById("fa-addr-btns"); if(_ab) _ab.style.display="none";
+  var _fg=document.getElementById("f-garantia"); if(_fg){ _fg.checked=false; toggleGarantia(false); }
   sv("fsd",date||"");fchg();updDur();showModal("om");
 };
 window.openEdit=function(id){
@@ -2373,6 +2395,59 @@ window.setOsAddr = function(type){
     if(pri){ pri.style.background='#F5F7FA'; pri.style.color='#8A95A8'; pri.style.borderColor='#DDE1EC'; }
   }
 };
+window.toggleGarantia = function(checked){
+  var block = document.getElementById('garantia-block');
+  if(block) block.style.display = checked ? 'grid' : 'none';
+  if(!checked){
+    document.getElementById('f-os-original-id').value = '';
+    document.getElementById('f-os-original-selected').style.display = 'none';
+    document.getElementById('f-os-original-results').innerHTML = '';
+    document.getElementById('f-os-original-search').value = '';
+  }
+};
+
+window.buscarOSOriginal = function(){
+  var q = (document.getElementById('f-os-original-search').value||'').toLowerCase().trim();
+  if(!q){ return; }
+  var results = orders.filter(function(o){
+    if(o.status === 'Cancelada') return false;
+    var num = (o.osNumber||'').toLowerCase();
+    var cli = (o.client||'').toLowerCase();
+    return num.includes(q) || cli.includes(q);
+  }).slice(0,8);
+  var el = document.getElementById('f-os-original-results');
+  if(!results.length){
+    el.innerHTML = '<div style="font-size:12px;color:#8A95A8;padding:8px;">Nenhuma OS encontrada</div>';
+    return;
+  }
+  el.innerHTML = results.map(function(o){
+    var sc = gsc(o.status||'Aguardando');
+    var t = TEAMS[o.team];
+    var osNum = (o.osNumber||o.id).replace(/'/g,"");
+    var cli   = (o.client||'').replace(/'/g,"");
+    var svc   = (o.service||'').replace(/'/g,"");
+    var tech  = t ? t.tech.replace(/'/g,"") : 'Sem técnico';
+    var date  = (o.scheduledDate||'Sem data').replace(/'/g,"");
+    return '<div onclick="selecionarOSOriginal(\'' + o.id + '\',\'' + osNum + '\',\'' + cli + '\',\'' + (o.team||'') + '\',\'' + date + '\')" '
+         + 'style="padding:8px 10px;border-radius:6px;border:1px solid #F0DCA0;background:var(--surface);margin-bottom:5px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">'
+         + '<div><div style="font-size:12px;font-weight:700;color:var(--text);">' + osNum + ' — ' + cli + '</div>'
+         + '<div style="font-size:10px;color:var(--text2);margin-top:2px;">' + svc + ' · ' + tech + ' · ' + date + '</div></div>'
+         + '<span style="font-size:10px;padding:2px 8px;border-radius:5px;background:' + sc.bg + ';color:' + sc.c + ';font-weight:700;">' + o.status + '</span>'
+         + '</div>';
+  }).join('');
+};
+window.selecionarOSOriginal = function(id, num, cli, team, date){
+  document.getElementById('f-os-original-id').value = id;
+  var t = TEAMS[team];
+  document.getElementById('f-os-original-info').innerHTML =
+    '<span style="color:#1A2C7A;font-family:JetBrains Mono,monospace;">'+(num||id)+'</span>'
+    + ' — ' + (cli||'')
+    + '<span style="font-size:10px;color:#8A95A8;margin-left:8px;">'+(t?t.tech:'')+' · '+(date||'')+'</span>';
+  document.getElementById('f-os-original-selected').style.display = 'block';
+  document.getElementById('f-os-original-results').innerHTML = '';
+  document.getElementById('f-os-original-search').value = '';
+};
+
 window.setView=function(v){
   view=v;document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));render();
 };
@@ -3464,6 +3539,7 @@ window.render = function render(){
   else if(view==="ordens")mc.innerHTML=_d(rOrdens());
   else if(view==="orcamentos")mc.innerHTML=_d(rOrcamentos());
   else if(view==="clientes")mc.innerHTML=_d(rClientes());
+  else if(view==="retrabalho") mc.innerHTML=_d(rRetrabalho());
   else if(view==="relatorios"){
     var _scrollY = window.scrollY || window.pageYOffset || 0;
     mc.innerHTML=_d(rRelatorios());
@@ -3971,6 +4047,8 @@ onAuthStateChanged(auth, user => {
     g("nav-clientes").style.display   = field ? "none" : "";
     const relBtn = document.getElementById("nav-relatorios");
     if(relBtn) relBtn.style.display = isGestorOrAdmin() ? "block" : "none";
+    const retBtn = document.getElementById("nav-retrabalho");
+    if(retBtn) retBtn.style.display = isGestorOrAdmin() ? "block" : "none";
 
     // If field user, force ordens view; otherwise dashboard
     if(field) setView("ordens");
@@ -4734,6 +4812,137 @@ function rRelatorios(){
   window._relPeriod = period; window._relPeriodVal = period; // compat
   return h;
 }
+
+function rRetrabalho(){
+  if(!isGestorOrAdmin()) return "<div style='text-align:center;padding:60px;color:#8A95A8;'>Acesso restrito</div>";
+
+  var h = "<div style='margin-bottom:20px'>";
+
+  // ── HEADER ─────────────────────────────────────────────────────────
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;'>";
+  h += "<div style='font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;'>⚠️ Relatório de Retrabalho & Garantias</div>";
+  h += "<div style='font-size:12px;color:var(--text2);'>OS de garantia abertas nos últimos 90 dias · impacto por técnico</div>";
+  h += "</div>";
+
+  // Get all garantia OS
+  var garantiaOS = orders.filter(function(o){ return o.isGarantia && o.osOriginalId; });
+  var today = new Date();
+
+  // ── KPIs ─────────────────────────────────────────────────────────
+  var totalGar = garantiaOS.length;
+  var totalOS  = orders.filter(function(o){ return o.status !== 'Cancelada'; }).length;
+  var taxaGar  = totalOS > 0 ? Math.round(totalGar/totalOS*100) : 0;
+  var garConc  = garantiaOS.filter(function(o){ return o.status === 'Concluída'; }).length;
+  var totalHrsGar = garantiaOS.reduce(function(s,o){ return s+(o.totalMins||0); },0);
+  var totalKmGar  = garantiaOS.reduce(function(s,o){ return s+(o.dispRound||0); },0);
+
+  h += "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px;'>";
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;'><div style='font-size:10px;color:var(--text2);text-transform:uppercase;font-weight:700;margin-bottom:6px;'>Total Garantias</div><div style='font-size:28px;font-weight:800;color:var(--red);font-family:JetBrains Mono,monospace;'>"+totalGar+"</div></div>";
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;'><div style='font-size:10px;color:var(--text2);text-transform:uppercase;font-weight:700;margin-bottom:6px;'>Taxa Retrabalho</div><div style='font-size:28px;font-weight:800;color:"+(taxaGar>15?'var(--red)':taxaGar>8?'var(--amber)':'var(--green)')+";font-family:JetBrains Mono,monospace;'>"+taxaGar+"%</div></div>";
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;'><div style='font-size:10px;color:var(--text2);text-transform:uppercase;font-weight:700;margin-bottom:6px;'>Horas Perdidas</div><div style='font-size:28px;font-weight:800;color:var(--amber);font-family:JetBrains Mono,monospace;'>"+m2s(totalHrsGar)+"</div></div>";
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;'><div style='font-size:10px;color:var(--text2);text-transform:uppercase;font-weight:700;margin-bottom:6px;'>KM Perdido</div><div style='font-size:28px;font-weight:800;color:var(--orange);font-family:JetBrains Mono,monospace;'>"+totalKmGar+" km</div></div>";
+  h += "</div>";
+
+  // ── POR TÉCNICO ───────────────────────────────────────────────────
+  h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;'>";
+  h += "<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:16px;letter-spacing:.8px;'>👤 Retrabalho por Técnico</div>";
+
+  Object.keys(TEAMS).forEach(function(tid){
+    var t = TEAMS[tid];
+    var techOS     = orders.filter(function(o){ return o.team===tid && o.status!=='Cancelada'; });
+    var techGar    = garantiaOS.filter(function(o){ return o.team===tid; });
+    var techSolved = garantiaOS.filter(function(o){
+      // This tech solved the garantia (different from original tech)
+      var orig = orders.find(function(x){ return x.id===o.osOriginalId; });
+      return o.team===tid && orig && orig.team!==tid;
+    });
+    var taxa = techOS.length > 0 ? Math.round(techGar.length/techOS.length*100) : 0;
+    var hrs  = techGar.reduce(function(s,o){ return s+(o.totalMins||0); },0);
+    var km   = techGar.reduce(function(s,o){ return s+(o.dispRound||0); },0);
+    var taxaColor = taxa>15 ? 'var(--red)' : taxa>8 ? 'var(--amber)' : 'var(--green)';
+
+    h += "<div style='border:1px solid var(--border);border-left:4px solid "+t.color+";border-radius:10px;padding:14px 16px;margin-bottom:10px;'>";
+    h += "<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;'>";
+    h += "<div><div style='font-size:15px;font-weight:800;color:"+t.color+";'>"+t.tech+"</div>";
+    h += "<div style='font-size:10px;color:var(--text2);margin-top:2px;'>"+techOS.length+" OS totais · "+techGar.length+" garantias</div></div>";
+    h += "<div style='text-align:right;'><div style='font-size:24px;font-weight:800;color:"+taxaColor+";font-family:JetBrains Mono,monospace;'>"+taxa+"%</div><div style='font-size:10px;color:var(--text2);'>taxa retrabalho</div></div></div>";
+
+    // Progress bar
+    h += "<div style='background:var(--surface2);border-radius:6px;height:8px;margin-bottom:12px;overflow:hidden;'>";
+    h += "<div style='background:"+taxaColor+";width:"+Math.min(taxa,100)+"%;height:100%;border-radius:6px;'></div></div>";
+
+    // Stats row
+    h += "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:"+(techGar.length>0?'12':'0')+"px;'>";
+    h += "<div style='background:var(--surface2);border-radius:7px;padding:8px;text-align:center;'><div style='font-size:9px;color:var(--text2);text-transform:uppercase;font-weight:700;'>Horas perdidas</div><div style='font-size:15px;font-weight:800;color:var(--amber);font-family:JetBrains Mono,monospace;'>"+m2s(hrs)+"</div></div>";
+    h += "<div style='background:var(--surface2);border-radius:7px;padding:8px;text-align:center;'><div style='font-size:9px;color:var(--text2);text-transform:uppercase;font-weight:700;'>KM perdido</div><div style='font-size:15px;font-weight:800;color:var(--orange);font-family:JetBrains Mono,monospace;'>"+km+" km</div></div>";
+    h += "<div style='background:var(--surface2);border-radius:7px;padding:8px;text-align:center;'><div style='font-size:9px;color:var(--text2);text-transform:uppercase;font-weight:700;'>Soluções definitivas</div><div style='font-size:15px;font-weight:800;color:var(--green);font-family:JetBrains Mono,monospace;'>"+techSolved.length+"</div></div>";
+    h += "</div>";
+
+    // List garantia OS for this tech
+    if(techGar.length > 0){
+      h += "<div style='border-top:1px solid var(--border);padding-top:10px;'>";
+      h += "<div style='font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;margin-bottom:8px;'>OS de Garantia</div>";
+      techGar.forEach(function(o){
+        var orig = orders.find(function(x){ return x.id===o.osOriginalId; });
+        var origTech = orig ? TEAMS[orig.team] : null;
+        var sc = gsc(o.status||'Aguardando');
+        var daysSince = orig && orig.scheduledDate ? Math.round((today - new Date(orig.scheduledDate+'T12:00:00'))/864e5) : null;
+        h += "<div style='display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);'>";
+        h += "<span style='font-size:11px;font-weight:700;color:var(--navy);font-family:JetBrains Mono,monospace;min-width:62px;'>"+(o.osNumber||o.id)+"</span>";
+        h += "<div style='flex:1;min-width:0;'>";
+        h += "<div style='font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>"+(o.client||'')+"</div>";
+        h += "<div style='font-size:10px;color:var(--text2);margin-top:1px;'>"+(o.service||'')+' · '+(o.scheduledDate||'Sem data')+(orig?" · Orig: <b>"+(orig.osNumber||'')+"</b>"+(origTech?" ("+origTech.tech+")":""):"")+(daysSince!==null?" · "+daysSince+"d após":"")+"</div>";
+        h += "</div>";
+        h += "<span style='font-size:9px;padding:2px 7px;border-radius:5px;background:"+sc.bg+";color:"+sc.c+";font-weight:700;white-space:nowrap;'>"+o.status+"</span>";
+        h += "</div>";
+      });
+      h += "</div>";
+    } else {
+      h += "<div style='font-size:12px;color:var(--green);text-align:center;padding:6px 0;'>✅ Nenhuma garantia registrada</div>";
+    }
+    h += "</div>";
+  });
+  h += "</div>";
+
+  // ── LISTA COMPLETA ────────────────────────────────────────────────
+  if(garantiaOS.length === 0){
+    h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;text-align:center;'>";
+    h += "<div style='font-size:36px;margin-bottom:12px;'>✅</div>";
+    h += "<div style='font-size:16px;font-weight:700;color:var(--green);'>Nenhuma OS de garantia registrada</div>";
+    h += "<div style='font-size:12px;color:var(--text2);margin-top:6px;'>Todas as OS foram resolvidas definitivamente na primeira visita</div>";
+    h += "</div>";
+  } else {
+    h += "<div style='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;'>";
+    h += "<div style='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:16px;letter-spacing:.8px;'>📋 Todas as OS de Garantia</div>";
+    garantiaOS.forEach(function(o){
+      var orig = orders.find(function(x){ return x.id===o.osOriginalId; });
+      var origTech = orig ? TEAMS[orig.team] : null;
+      var curTech  = TEAMS[o.team];
+      var sc = gsc(o.status||'Aguardando');
+      var isSolved = orig && o.team !== orig.team;
+      h += "<div style='border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:8px;'>";
+      h += "<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;'>";
+      h += "<div><div style='font-size:13px;font-weight:700;color:var(--text);'>"+(o.osNumber||o.id)+" — "+(o.client||'')+"</div>";
+      h += "<div style='font-size:10px;color:var(--text2);margin-top:2px;'>"+(o.service||'')+' · '+(o.scheduledDate||'Sem data')+"</div></div>";
+      h += "<span style='font-size:10px;padding:3px 9px;border-radius:6px;background:"+sc.bg+";color:"+sc.c+";font-weight:700;'>"+o.status+"</span></div>";
+      h += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;'>";
+      h += "<div style='background:var(--surface2);border-radius:7px;padding:8px 10px;'>";
+      h += "<div style='font-size:9px;color:var(--text2);text-transform:uppercase;font-weight:700;margin-bottom:3px;'>OS Original</div>";
+      h += "<div style='font-size:12px;font-weight:700;color:var(--navy);font-family:JetBrains Mono,monospace;'>"+(orig?orig.osNumber||orig.id:'Não encontrada')+"</div>";
+      h += "<div style='font-size:10px;color:var(--text2);'>"+(origTech?origTech.tech:'—')+' · '+(orig&&orig.scheduledDate?orig.scheduledDate:'')+"</div></div>";
+      h += "<div style='background:var(--surface2);border-radius:7px;padding:8px 10px;'>";
+      h += "<div style='font-size:9px;color:var(--text2);text-transform:uppercase;font-weight:700;margin-bottom:3px;'>Técnico Atual</div>";
+      h += "<div style='font-size:12px;font-weight:700;color:"+(isSolved?'var(--green)':'var(--amber)')+";'>"+(curTech?curTech.tech:'—')+"</div>";
+      h += "<div style='font-size:10px;color:var(--text2);'>"+(isSolved?'✅ Técnico diferente — provável solução definitiva':'⚠️ Mesmo técnico')+"</div></div>";
+      h += "</div></div>";
+    });
+    h += "</div>";
+  }
+
+  h += "</div>";
+  return h;
+}
+
 
 // Track chart instances to destroy before recreating
 var _chartInstances = {};
