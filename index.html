@@ -270,6 +270,21 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
     /* Form grids */
     .fg-grid-2 { grid-template-columns: 1fr !important; }
   }
+
+  /* Fix Leaflet inside modal */
+  .leaflet-pane, .leaflet-tile, .leaflet-marker-icon,
+  .leaflet-marker-shadow, .leaflet-tile-container,
+  .leaflet-map-pane svg, .leaflet-map-pane canvas,
+  .leaflet-zoom-box, .leaflet-image-layer, .leaflet-layer {
+    position: absolute;
+  }
+  .leaflet-container {
+    overflow: hidden;
+    cursor: crosshair;
+  }
+  .leaflet-marker-pane, .leaflet-tooltip-pane, .leaflet-popup-pane {
+    z-index: 600;
+  }
 </style>
 </head>
 <body>
@@ -521,7 +536,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
         <button onclick="searchMapAddress()" style="padding:8px 14px;border-radius:8px;border:none;background:#1A2C7A;color:#fff;cursor:pointer;font-size:13px;font-weight:700;">🔍</button>
       </div>
       <!-- Map -->
-      <div id="map-container" style="height:380px;width:100%;"></div>
+      <div id="map-container" style="height:380px;width:100%;z-index:0;position:relative;"></div>
       <!-- Selected address -->
       <div style="padding:10px 16px;background:var(--surface2);border-top:1px solid var(--border);">
         <div style="font-size:11px;color:#8A95A8;margin-bottom:4px;">Endereço selecionado:</div>
@@ -1343,6 +1358,17 @@ window.openOsDetail = function(id){
   body += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
     <div style="background:#F8F9FC;border:1px solid #DDE1EC;border-radius:9px;padding:12px;">
       <div style="font-size:10px;color:#8A95A8;font-weight:700;text-transform:uppercase;margin-bottom:8px;">👤 Cliente</div>
+      ${o.isGarantia && o.osOriginalId ? (() => {
+        const orig = orders.find(x=>x.id===o.osOriginalId);
+        const origNum = orig ? (orig.osNumber||'OS Original') : 'OS Original';
+        const origTech = orig && TEAMS[orig.team] ? TEAMS[orig.team].tech : '';
+        return `<div style="background:#FFFAEE;border:1px solid #F0DCA0;border-radius:8px;padding:10px 12px;margin-bottom:10px;cursor:pointer;" onclick="openOsDetail('${o.osOriginalId}')">
+          <div style="font-size:10px;font-weight:700;color:#E8A000;text-transform:uppercase;margin-bottom:4px;">⚠️ OS de Garantia</div>
+          <div style="font-size:12px;font-weight:700;color:#1A2340;">OS Original: <span style="color:#1A2C7A;font-family:JetBrains Mono,monospace;">${origNum}</span></div>
+          ${origTech ? `<div style="font-size:11px;color:#8A95A8;margin-top:2px;">Técnico original: ${origTech}</div>` : ''}
+          <div style="font-size:10px;color:#E8A000;margin-top:4px;">Toque para ver a OS original →</div>
+        </div>`;
+      })() : ""}
       <div style="font-size:13px;font-weight:700;">${o.client||""}</div>
       <div style="font-size:11px;color:#8A95A8;margin-top:3px;">📍 ${o.address||""}</div>
       <div style="font-size:11px;color:#8A95A8;margin-top:2px;">📞 ${o.contact||""}</div>
@@ -3382,6 +3408,7 @@ function renderOSCard(o, t, sc, pc, up){
         <span style="font-size:13px;font-weight:700;color:var(--text)">${o.client||""}</span>
         <span class="tag" style="background:#EEF3FF;color:#1A2C7A">${o.type||""}</span>
         <span class="tag" style="background:${sc.bg};color:${sc.c}">${o.status}</span>
+        ${o.isGarantia && o.osOriginalId ? `<span onclick="openOsDetail('${o.osOriginalId}')" style="font-size:10px;font-weight:700;background:#FFFAEE;color:#E8A000;border:1px solid #F0DCA0;padding:2px 8px;border-radius:5px;cursor:pointer;white-space:nowrap;" title="Ver OS Original">⚠️ Garantia · ${(orders.find(x=>x.id===o.osOriginalId)||{}).osNumber||'OS Original'}</span>` : ""}
         ${o.scheduledDate?`<span style="font-size:10px;color:#1A2C7A;background:#EEF3FF;padding:2px 7px;border-radius:5px;font-weight:600">📅 ${o.scheduledDate}${o.scheduledStart?" "+o.scheduledStart:""}</span>`:""}
       </div>
       <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">${o.address?`📍 ${o.address}`:""} ${o.contact?`📞 ${o.contact}`:""}</div>
@@ -4036,11 +4063,24 @@ let _mapSelectedCoords = null;
 
 window.openMapPicker = function(target){
   _mapTarget = target || "primary";
+  // Reset selected state
+  _mapSelectedCoords = null;
+  _mapSelectedAddr = "";
+  document.getElementById("map-selected-coords").textContent = "";
+  document.getElementById("map-selected-addr").textContent = "Nenhum local selecionado";
   showModal("map-picker");
   
+  // Use longer timeout to ensure modal is fully visible before Leaflet init
   setTimeout(function(){
+    var container = document.getElementById("map-container");
+    if(!container) return;
+    
     if(!_leafletMap){
-      _leafletMap = L.map("map-container").setView([-28.2800, -49.1700], 14);
+      _leafletMap = L.map("map-container", {
+        preferCanvas: true,
+        zoomControl: true
+      }).setView([-28.2800, -49.1700], 14);
+      
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
         maxZoom: 19
@@ -4051,18 +4091,28 @@ window.openMapPicker = function(target){
         placeMapMarker(e.latlng.lat, e.latlng.lng);
         reverseGeocode(e.latlng.lat, e.latlng.lng);
       });
-    } else {
-      _leafletMap.invalidateSize();
     }
     
-    // Pre-fill with existing address if any
-    const existingAddr = target === "secondary" 
-      ? document.getElementById("cli-street2") && document.getElementById("cli-street2").value
-      : document.getElementById("cli-street") && document.getElementById("cli-street").value;
-    if(existingAddr){
-      document.getElementById("map-search-input").value = existingAddr;
-    }
-  }, 300);
+    // Always invalidate size when opening (fixes grey tiles)
+    setTimeout(function(){
+      _leafletMap.invalidateSize(true);
+      
+      // Remove old marker if any
+      if(_leafletMarker){
+        _leafletMap.removeLayer(_leafletMarker);
+        _leafletMarker = null;
+      }
+      
+      // Pre-fill with existing address if any
+      var existingAddr = target === "secondary" 
+        ? (document.getElementById("cli-street2") ? document.getElementById("cli-street2").value : "")
+        : (document.getElementById("cli-street") ? document.getElementById("cli-street").value : "");
+      if(existingAddr){
+        document.getElementById("map-search-input").value = existingAddr;
+        searchMapAddress();
+      }
+    }, 200);
+  }, 350);
 };
 
 
@@ -4339,12 +4389,17 @@ function placeMapMarker(lat, lng){
   } else {
     _leafletMarker = L.marker([lat, lng], {draggable: true}).addTo(_leafletMap);
     _leafletMarker.on("dragend", function(e){
-      const pos = e.target.getLatLng();
+      var pos = e.target.getLatLng();
+      placeMapMarker(pos.lat, pos.lng);
       reverseGeocode(pos.lat, pos.lng);
     });
   }
+  _leafletMap.panTo([lat, lng]);
   _mapSelectedCoords = {lat: lat, lng: lng};
-  document.getElementById("map-selected-coords").textContent = "Lat: "+lat.toFixed(6)+", Lng: "+lng.toFixed(6);
+  var coordEl = document.getElementById("map-selected-coords");
+  if(coordEl) coordEl.textContent = "Lat: "+lat.toFixed(6)+", Lng: "+lng.toFixed(6);
+  var addrEl = document.getElementById("map-selected-addr");
+  if(addrEl) addrEl.textContent = "Buscando endereço...";
 }
 
 async function reverseGeocode(lat, lng){
