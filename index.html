@@ -4394,7 +4394,7 @@ window.drawerNav = function(v){
 };
 
 
-function placeMapMarker(lat, lng){
+window.placeMapMarker = function placeMapMarker(lat, lng){
   if(_leafletMarker){
     _leafletMarker.setLatLng([lat, lng]);
   } else {
@@ -4413,7 +4413,7 @@ function placeMapMarker(lat, lng){
   if(addrEl) addrEl.textContent = "Buscando endereço...";
 }
 
-async function reverseGeocode(lat, lng){
+window.reverseGeocode = async function reverseGeocode(lat, lng){
   try{
     const url = "https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lng+"&addressdetails=1";
     const res = await fetch(url, {headers:{"Accept-Language":"pt-BR","User-Agent":"ProtonOS/1.0"}});
