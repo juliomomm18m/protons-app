@@ -754,6 +754,8 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
           <div class="fg"><label>Bairro</label><input type="text" id="cli-hood" placeholder="Bairro" list="hood-list"/></div>
           <div class="fg"><label>Cidade</label><input type="text" id="cli-city" placeholder="Cidade" list="city-list"/></div>
           <div class="fg"><label>Estado</label><input type="text" id="cli-state" placeholder="SC" maxlength="2"/></div>
+        <input type="hidden" id="cli-lat" value=""/>
+        <input type="hidden" id="cli-lng" value=""/>
           <div class="fg"><label>CEP</label><input type="text" id="cli-zip" placeholder="00000-000"/></div>
         </div>
       </div>
@@ -769,6 +771,8 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
           <div class="fg"><label>Bairro</label><input type="text" id="cli-hood2" placeholder="Bairro" list="hood-list"/></div>
           <div class="fg"><label>Cidade</label><input type="text" id="cli-city2" placeholder="Cidade" list="city-list"/></div>
           <div class="fg"><label>Estado</label><input type="text" id="cli-state2" placeholder="SC" maxlength="2"/></div>
+        <input type="hidden" id="cli-lat2" value=""/>
+        <input type="hidden" id="cli-lng2" value=""/>
           <div class="fg"><label>CEP</label><input type="text" id="cli-zip2" placeholder="00000-000"/></div>
           <div class="fg" style="grid-column:1/-1"><label>Referência</label><input type="text" id="cli-addr2-ref" placeholder="Ex: Empresa, escritório, filial..."/></div>
         </div>
@@ -995,7 +999,10 @@ function needsH(sv,tp){return tp==="Nova Instalação"||NH.includes(sv);}
 function hLoad(h){return orders.filter(o=>o.helper===h&&o.status==="Em Andamento").length;}
 function gpc(pr){return PR[pr]||PR["Média"];}
 function gsc(st){return ST[st]||ST["Aguardando"];}
-function mapsUrl(address){return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;}
+function mapsUrl(address, lat, lng){
+  if(lat && lng) return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
 function waUrl(contact, msg){
   let num = contact.replace(/[^0-9]/g,"");
   // Add Brazil country code if not present
@@ -2585,6 +2592,8 @@ window.editCli = function(id){
   sv("cli-doc",c.doc); sv("cli-email",c.email); sv("cli-phone",c.phone); sv("cli-phone2",c.phone2);
   sv("cli-phone2-name",c.phone2name); sv("cli-street",c.street); sv("cli-hood",c.hood);
   sv("cli-city",c.city); sv("cli-state",c.state); sv("cli-zip",c.zip); sv("cli-obs",c.obs);
+  sv("cli-lat",c.lat||""); sv("cli-lng",c.lng||"");
+  sv("cli-lat2",c.lat2||""); sv("cli-lng2",c.lng2||"");
   sv("cli-monthly",c.monthly||""); sv("cli-pay-day",c.payDay||"");
   sv("cli-contract-services",c.contractServices||""); sv("cli-contract-obs",c.contractObs||"");
   document.getElementById("cli-birth").value = c.birth||"";
@@ -2628,6 +2637,10 @@ window.saveCli = async function(){
     contractServices: isGestor ? (document.getElementById("cli-contract-services").value||null) : null,
     contractObs:      isGestor ? (document.getElementById("cli-contract-obs").value||null) : null,
     updatedBy: userProfile?userProfile.name:"",
+    lat:  document.getElementById("cli-lat")  ? (parseFloat(document.getElementById("cli-lat").value)||null)  : null,
+    lng:  document.getElementById("cli-lng")  ? (parseFloat(document.getElementById("cli-lng").value)||null)  : null,
+    lat2: document.getElementById("cli-lat2") ? (parseFloat(document.getElementById("cli-lat2").value)||null) : null,
+    lng2: document.getElementById("cli-lng2") ? (parseFloat(document.getElementById("cli-lng2").value)||null) : null,
   };
   try{
     if(editCliId){
@@ -2676,7 +2689,7 @@ window.openCliDetail = function(id){
         ${c.hood?`<div style="font-size:11px;color:#8A95A8;margin-top:2px">${c.hood}</div>`:""}
         ${c.city?`<div style="font-size:11px;color:#8A95A8">${c.city}${c.state?" - "+c.state:""}</div>`:""}
         ${c.zip?`<div style="font-size:11px;color:#8A95A8">CEP: ${c.zip}</div>`:""}
-        ${c.street?`<a href="${mapsUrl((c.street||"")+" "+(c.hood||"")+" "+(c.city||""))}" target="_blank" style="font-size:10px;color:#1A2C7A;text-decoration:none;font-weight:600;margin-top:4px;display:inline-block;">📍 Ver no Maps</a>`:""}
+        ${c.street?`<a href="${mapsUrl((c.street||"")+" "+(c.hood||"")+" "+(c.city||""), c.lat, c.lng)}" target="_blank" style="font-size:10px;color:#1A2C7A;text-decoration:none;font-weight:600;margin-top:4px;display:inline-block;">📍 Ver no Maps</a>`:""}
       </div>
     </div>`;
 
@@ -3424,7 +3437,7 @@ function renderOSCard(o, t, sc, pc, up){
       ${canT?`<button data-fn="time" data-id="${o.id}" style="padding:6px 10px;border-radius:6px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;cursor:pointer;font-size:11px;font-weight:700;flex:${isMob?'1':'unset'};">⏱ Horários</button>`:""}
       ${canObs?`<button data-fn="obs" data-id="${o.id}" style="padding:6px 10px;border-radius:6px;border:1px solid #F0DCA0;background:#FFFAEE;color:#E8A000;cursor:pointer;font-size:11px;font-weight:700;flex:${isMob?'1':'unset'};">📝 Obs</button>`:""}
       <div style="display:flex;gap:4px;${isMob?'':'margin-top:2px;'}">
-        <a href="${mapsUrl(o.address||'')}" target="_blank" style="padding:6px 10px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;text-decoration:none;font-size:11px;font-weight:700;">📍 Maps</a>
+        <a href="${(()=>{const _cli=clientes.find(x=>x.name===o.client);return mapsUrl(o.address||'',_cli&&_cli.lat,_cli&&_cli.lng);})()}" target="_blank" style="padding:6px 10px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;text-decoration:none;font-size:11px;font-weight:700;">📍 Maps</a>
         <a href="${waUrl(o.contact||'', waMsg(o,up))}" target="_blank" style="padding:6px 10px;border-radius:6px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;text-decoration:none;font-size:11px;font-weight:700;">💬 WA</a>
       </div>
     </div>
@@ -3501,19 +3514,31 @@ function applyThemeToInline(isDark){}
 window.renderSearch = function(inputEl){
   var val = inputEl.value;
   var pos = inputEl.selectionStart;
-  var inputPlaceholder = inputEl.placeholder || null;
-  window.search = val;
+  var ph = inputEl.placeholder || '';
+  // Update the correct search variable based on context
+  if(ph.indexOf('cliente') !== -1 || ph.indexOf('Cliente') !== -1){
+    window._cliSearch = val;
+  } else if(ph.indexOf('rçamento') !== -1 || ph.indexOf('rcamento') !== -1){
+    window._orcSearch = val;
+  } else {
+    window.search = val;
+  }
   window.render();
+  // Restore focus after render
   requestAnimationFrame(function(){
     var newInput = null;
-    if(inputPlaceholder){
+    if(ph){
       var all = document.querySelectorAll('input[type="text"]');
       for(var i=0; i<all.length; i++){
-        if(all[i].placeholder === inputPlaceholder){ newInput = all[i]; break; }
+        if(all[i].placeholder === ph){ newInput = all[i]; break; }
       }
     }
     if(!newInput) newInput = document.querySelector('.filters input[type="text"]');
-    if(newInput){ newInput.focus(); try{ newInput.setSelectionRange(pos, pos); }catch(e){} }
+    if(newInput){
+      newInput.value = val;
+      newInput.focus();
+      try{ newInput.setSelectionRange(pos, pos); }catch(e){}
+    }
   });
 };
 
@@ -3859,7 +3884,7 @@ function rOrdens(){
           <button data-fn="detail" data-id="${o.id}" style="flex:1;min-width:70px;padding:6px 4px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:10px;font-weight:700;">🔍 Detalhes</button>
           ${canTime(o)?`<button data-fn="time" data-id="${o.id}" style="flex:1;min-width:70px;padding:6px 4px;border-radius:6px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;cursor:pointer;font-size:10px;font-weight:700;">⏱ Horários</button>`:""}
           ${canAddObs(o)&&isField()?`<button data-fn="obs" data-id="${o.id}" style="flex:1;min-width:60px;padding:6px 4px;border-radius:6px;border:1px solid #F0DCA0;background:#FFFAEE;color:#E8A000;cursor:pointer;font-size:10px;font-weight:700;">📝 Obs</button>`:""}
-          <a href="${mapsUrl(o.address||'')}" target="_blank" style="flex:1;min-width:55px;padding:6px 4px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;text-decoration:none;font-size:10px;font-weight:700;text-align:center;">📍 Maps</a>
+          <a href="${(()=>{const _cli=clientes.find(x=>x.name===o.client);return mapsUrl(o.address||'',_cli&&_cli.lat,_cli&&_cli.lng);})()}" target="_blank" style="flex:1;min-width:55px;padding:6px 4px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;text-decoration:none;font-size:10px;font-weight:700;text-align:center;">📍 Maps</a>
           <a href="${waUrl(o.contact||'', waMsg(o,userProfile))}" target="_blank" style="flex:1;min-width:45px;padding:6px 4px;border-radius:6px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;text-decoration:none;font-size:10px;font-weight:700;text-align:center;">💬 WA</a>
           ${isGestorOrAdmin()&&canEdit(o)?`<button data-fn="edit" data-id="${o.id}" style="padding:6px 8px;border-radius:6px;border:1px solid #DDE1EC;cursor:pointer;font-size:11px;background:#F5F7FA;color:#1E6FBF">✏️</button>`:""}
           ${canDelete()?`<button data-fn="del" data-id="${o.id}" style="padding:6px 8px;border-radius:6px;border:1px solid #DDE1EC;cursor:pointer;font-size:11px;background:#F5F7FA;color:#E03030">🗑</button>`:""}
@@ -3983,7 +4008,7 @@ function rCal(){
           ${canTime(o)?`<button data-fn="time" data-id="${o.id}" style="width:100%;margin-top:6px;padding:6px;border-radius:7px;border:1px solid #A0CAEF;background:#EEF5FF;color:#1E6FBF;cursor:pointer;font-size:11px;font-weight:700;">⏱ Registrar Horários</button>`:""}
           ${canAddObs(o)&&(o.status==="Concluída"||o.status==="Cancelada")&&isField()?`<button data-fn="obs" data-id="${o.id}" style="width:100%;margin-top:6px;padding:6px;border-radius:7px;border:1px solid #F0DCA0;background:#FFFAEE;color:#E8A000;cursor:pointer;font-size:11px;font-weight:700;">📝 Adicionar Observação</button>`:""}
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-top:6px;">
-            <a href="${mapsUrl(o.address||'')}" target="_blank" style="padding:6px;border-radius:7px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;text-decoration:none;font-size:11px;font-weight:700;text-align:center;">📍 Google Maps</a>
+            <a href="${(()=>{const _cli=clientes.find(x=>x.name===o.client);return mapsUrl(o.address||'',_cli&&_cli.lat,_cli&&_cli.lng);})()}" target="_blank" style="padding:6px;border-radius:7px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;text-decoration:none;font-size:11px;font-weight:700;text-align:center;">📍 Google Maps</a>
             <a href="${waUrl(o.contact||'', waMsg(o,userProfile))}" target="_blank" style="padding:6px;border-radius:7px;border:1px solid #C8ECD7;background:#EBF8F1;color:#1A9E4A;text-decoration:none;font-size:11px;font-weight:700;text-align:center;">💬 WhatsApp</a>
           </div>
         </div></div>`;
@@ -4454,8 +4479,9 @@ window.searchMapAddress = async function(){
 
 window.confirmMapAddress = function(){
   if(!_mapSelectedCoords){ toast("Selecione um local no mapa"); return; }
-  
   const d = _leafletMarker && _leafletMarker._addrData;
+  const lat = _mapSelectedCoords.lat;
+  const lng = _mapSelectedCoords.lng;
   if(_mapTarget === "secondary"){
     if(d){
       if(document.getElementById("cli-street2")) document.getElementById("cli-street2").value = d.street || _mapSelectedAddr;
@@ -4465,6 +4491,8 @@ window.confirmMapAddress = function(){
     } else {
       if(document.getElementById("cli-street2")) document.getElementById("cli-street2").value = _mapSelectedAddr;
     }
+    if(document.getElementById("cli-lat2")) document.getElementById("cli-lat2").value = lat;
+    if(document.getElementById("cli-lng2")) document.getElementById("cli-lng2").value = lng;
   } else {
     if(d){
       if(document.getElementById("cli-street")) document.getElementById("cli-street").value = d.street || _mapSelectedAddr;
@@ -4475,11 +4503,13 @@ window.confirmMapAddress = function(){
     } else {
       if(document.getElementById("cli-street")) document.getElementById("cli-street").value = _mapSelectedAddr;
     }
+    if(document.getElementById("cli-lat")) document.getElementById("cli-lat").value = lat;
+    if(document.getElementById("cli-lng")) document.getElementById("cli-lng").value = lng;
   }
-  
   closeM("map-picker");
   toast("Endereço preenchido ✓");
 };
+
 
 window.toggleTheme = function(){
   const isDark = document.body.classList.toggle("dark");
