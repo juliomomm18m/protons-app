@@ -2904,7 +2904,7 @@ function rClientes(){
 
   h+=`</div>
     <div style="display:flex;gap:8px;align-items:center;">
-      <input type="text" placeholder="🔍 Buscar cliente..." value="${searchCli}" oninput="window._cliSearch=this.value;render()"
+      <input type="text" placeholder="🔍 Buscar cliente..." value="${searchCli}" oninput="window._cliSearch=this.value;renderSearch(this)"
         style="padding:8px 12px;border-radius:8px;border:1px solid #DDE1EC;font-size:12px;outline:none;font-family:'Syne',sans-serif;"/>
       <button onclick="openNewCli(null,null)" class="btnp">+ Novo Cliente</button>
     </div>
@@ -3349,7 +3349,7 @@ function rOrcamentos(){
   h+=`<button onclick="window._orcFilter='todos';render()" style="padding:7px 14px;border-radius:8px;border:1px solid ${filterStatus==="todos"?"#1A2C7A":""};background:${filterStatus==="todos"?"#E8EEFF":"#fff"};color:${filterStatus==="todos"?"#1A2C7A":"#8A95A8"};cursor:pointer;font-size:11px;font-weight:700;">Todos ${orcamentos.length}</button>`;
   h+=`</div>
     <div style="display:flex;gap:8px;align-items:center;">
-      <input type="text" placeholder="🔍 Buscar cliente..." value="${filterSearch}" oninput="window._orcSearch=this.value;render()"
+      <input type="text" placeholder="🔍 Buscar cliente..." value="${filterSearch}" oninput="window._orcSearch=this.value;renderSearch(this)"
         style="padding:8px 12px;border-radius:8px;border:1px solid #DDE1EC;font-size:12px;outline:none;font-family:'Syne',sans-serif;"/>
       <button onclick="openNewOrc(null)" class="btnp">+ Novo Orçamento</button>
     </div>
@@ -4061,6 +4061,54 @@ let _mapTarget = "primary"; // "primary" or "secondary"
 let _mapSelectedAddr = "";
 let _mapSelectedCoords = null;
 
+
+window.placeMapMarker = function placeMapMarker(lat, lng){
+  if(_leafletMarker){
+    _leafletMarker.setLatLng([lat, lng]);
+  } else {
+    _leafletMarker = L.marker([lat, lng], {draggable: true}).addTo(_leafletMap);
+    _leafletMarker.on("dragend", function(e){
+      var pos = e.target.getLatLng();
+      placeMapMarker(pos.lat, pos.lng);
+      reverseGeocode(pos.lat, pos.lng);
+    });
+  }
+  _leafletMap.panTo([lat, lng]);
+  _mapSelectedCoords = {lat: lat, lng: lng};
+  var coordEl = document.getElementById("map-selected-coords");
+  if(coordEl) coordEl.textContent = "Lat: "+lat.toFixed(6)+", Lng: "+lng.toFixed(6);
+  var addrEl = document.getElementById("map-selected-addr");
+  if(addrEl) addrEl.textContent = "Buscando endereço...";
+}
+
+window.reverseGeocode = async function reverseGeocode(lat, lng){
+  try{
+    const url = "https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lng+"&addressdetails=1";
+    const res = await fetch(url, {headers:{"Accept-Language":"pt-BR","User-Agent":"ProtonOS/1.0"}});
+    const data = await res.json();
+    if(data && data.address){
+      const a = data.address;
+      const road = a.road || a.pedestrian || a.footway || "";
+      const num = a.house_number || "";
+      const hood = a.suburb || a.neighbourhood || a.quarter || "";
+      const city = a.city || a.town || a.village || "";
+      const state = a.state_code || a.state || "";
+      const parts = [road+(num?" "+num:""), hood, city+(state?"/"+state:"")].filter(Boolean);
+      _mapSelectedAddr = parts.join(", ");
+      document.getElementById("map-selected-addr").textContent = _mapSelectedAddr || data.display_name;
+      
+      // Also store individual fields
+      _leafletMarker._addrData = {
+        street: road + (num ? ", "+num : ""),
+        hood: hood,
+        city: city,
+        state: a.state_code || "SC",
+        zip: a.postcode || ""
+      };
+    }
+  }catch(e){ console.error("Reverse geocode error:", e); }
+}
+
 window.openMapPicker = function(target){
   _mapTarget = target || "primary";
   // Reset selected state
@@ -4393,53 +4441,6 @@ window.drawerNav = function(v){
   });
 };
 
-
-window.placeMapMarker = function placeMapMarker(lat, lng){
-  if(_leafletMarker){
-    _leafletMarker.setLatLng([lat, lng]);
-  } else {
-    _leafletMarker = L.marker([lat, lng], {draggable: true}).addTo(_leafletMap);
-    _leafletMarker.on("dragend", function(e){
-      var pos = e.target.getLatLng();
-      placeMapMarker(pos.lat, pos.lng);
-      reverseGeocode(pos.lat, pos.lng);
-    });
-  }
-  _leafletMap.panTo([lat, lng]);
-  _mapSelectedCoords = {lat: lat, lng: lng};
-  var coordEl = document.getElementById("map-selected-coords");
-  if(coordEl) coordEl.textContent = "Lat: "+lat.toFixed(6)+", Lng: "+lng.toFixed(6);
-  var addrEl = document.getElementById("map-selected-addr");
-  if(addrEl) addrEl.textContent = "Buscando endereço...";
-}
-
-window.reverseGeocode = async function reverseGeocode(lat, lng){
-  try{
-    const url = "https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lng+"&addressdetails=1";
-    const res = await fetch(url, {headers:{"Accept-Language":"pt-BR","User-Agent":"ProtonOS/1.0"}});
-    const data = await res.json();
-    if(data && data.address){
-      const a = data.address;
-      const road = a.road || a.pedestrian || a.footway || "";
-      const num = a.house_number || "";
-      const hood = a.suburb || a.neighbourhood || a.quarter || "";
-      const city = a.city || a.town || a.village || "";
-      const state = a.state_code || a.state || "";
-      const parts = [road+(num?" "+num:""), hood, city+(state?"/"+state:"")].filter(Boolean);
-      _mapSelectedAddr = parts.join(", ");
-      document.getElementById("map-selected-addr").textContent = _mapSelectedAddr || data.display_name;
-      
-      // Also store individual fields
-      _leafletMarker._addrData = {
-        street: road + (num ? ", "+num : ""),
-        hood: hood,
-        city: city,
-        state: a.state_code || "SC",
-        zip: a.postcode || ""
-      };
-    }
-  }catch(e){ console.error("Reverse geocode error:", e); }
-}
 
 window.searchMapAddress = async function(){
   const q = document.getElementById("map-search-input").value.trim();
