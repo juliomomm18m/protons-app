@@ -421,7 +421,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
         <option>Monitoramento</option><option>Outros</option>
       </select></div>
       <div class="fg"><label>Status</label><select id="fst"><option>Aguardando</option><option>Em Andamento</option><option>Concluída</option><option>Cancelada</option></select></div>
-      <div class="fg"><label>Técnico</label><select id="fte"><option value="">Sem equipe</option><option value="equipe1">Julio (Alpha)</option><option value="equipe2">Cleverson (Beta)</option><option value="equipe3">Rafael (Gamma)</option></select></div>
+      <div class="fg"><label>Técnico <span style="color:var(--red);">*</span></label><select id="fte"><option value="">Sem equipe</option><option value="equipe1">Julio (Alpha)</option><option value="equipe2">Cleverson (Beta)</option><option value="equipe3">Rafael (Gamma)</option></select></div>
       <div class="fg" style="grid-column:1/-1">
         <label id="hl">Ajudante</label>
         <select id="fh"><option value="">Sem ajudante</option><option>Tiago</option><option>Ramon</option></select>
@@ -430,7 +430,7 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
       <div style="grid-column:1/-1;background:#EEF3FF;border:1px solid #C2D0F0;border-radius:10px;padding:14px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#1A2C7A;margin-bottom:12px;">📅 Agendamento</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr)) 1fr;gap:11px;">
-          <div class="fg"><label>Data</label><input type="date" id="fsd"/></div>
+          <div class="fg"><label>Data <span style="color:var(--red);">*</span></label><input type="date" id="fsd"/></div>
           <div class="fg"><label>Início Previsto</label><input type="time" id="fss"/></div>
           <div class="fg"><label>Término Previsto</label><input type="time" id="fse"/></div>
         </div>
@@ -1738,6 +1738,9 @@ window.sv=function sv(id,v){const el=document.getElementById(id);if(el)el.value=
 window.saveOS=async function(){
   const cl=gv("fc").trim(),ad=gv("fa").trim(),co=gv("fct").trim();
   if(!cl||!ad||!co){toast("Preencha cliente, endereço e contato",false);return;}
+  const fte=gv("fte"),fsd=gv("fsd");
+  if(!fte){toast("Selecione o técnico responsável",false);document.getElementById("fte").focus();return;}
+  if(!fsd){toast("Informe a data de agendamento",false);document.getElementById("fsd").focus();return;}
 
   // Check for open OS from same client (only for new OS, not edits)
   if(!editId){
