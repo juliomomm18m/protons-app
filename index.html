@@ -749,7 +749,10 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
               <span>Rua / Avenida</span>
               <button type="button" onclick="openMapPicker('primary')" style="padding:3px 8px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:10px;font-weight:700;">📍 Mapa</button>
             </label>
-            <input type="text" id="cli-street" placeholder="Rua, número"/>
+            <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;">
+              <input type="text" id="cli-street" placeholder="Rua / Avenida"/>
+              <input type="text" id="cli-street-num" placeholder="Nº" maxlength="10" style="text-align:center;"/>
+            </div>
           </div>
           <div class="fg"><label>Bairro</label><input type="text" id="cli-hood" placeholder="Bairro" list="hood-list"/></div>
           <div class="fg"><label>Cidade</label><input type="text" id="cli-city" placeholder="Cidade" list="city-list"/></div>
@@ -767,7 +770,10 @@ main{padding:18px 24px;width:100%;box-sizing:border-box;}
           <button type="button" onclick="openMapPicker('secondary')" style="padding:3px 10px;border-radius:6px;border:1px solid #C2D0F0;background:#EEF3FF;color:#1A2C7A;cursor:pointer;font-size:10px;font-weight:700;">📍 Mapa</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
-          <div class="fg" style="grid-column:1/-1"><label>Rua / Avenida</label><input type="text" id="cli-street2" placeholder="Rua, número (opcional)"/></div>
+          <div class="fg" style="grid-column:1/-1"><label>Rua / Avenida</label><div style="display:grid;grid-template-columns:1fr 100px;gap:8px;">
+              <input type="text" id="cli-street2" placeholder="Rua / Avenida (opcional)"/>
+              <input type="text" id="cli-street-num2" placeholder="Nº" maxlength="10" style="text-align:center;"/>
+            </div></div>
           <div class="fg"><label>Bairro</label><input type="text" id="cli-hood2" placeholder="Bairro" list="hood-list"/></div>
           <div class="fg"><label>Cidade</label><input type="text" id="cli-city2" placeholder="Cidade" list="city-list"/></div>
           <div class="fg"><label>Estado</label><input type="text" id="cli-state2" placeholder="SC" maxlength="2"/></div>
@@ -2590,7 +2596,8 @@ window.editCli = function(id){
   document.getElementById("cli-obs-block").style.display = (userProfile&&userProfile.role==="gestor") ? "block" : "none";
   sv("cli-name",c.name); sv("cli-ptype",c.ptype||"pf"); sv("cli-ctype",c.ctype||"normal");
   sv("cli-doc",c.doc); sv("cli-email",c.email); sv("cli-phone",c.phone); sv("cli-phone2",c.phone2);
-  sv("cli-phone2-name",c.phone2name); sv("cli-street",c.street); sv("cli-hood",c.hood);
+  sv("cli-phone2-name",c.phone2name); sv("cli-street",c.street?(c.street.replace(/\s*\d+\s*$/,"").trim()||c.street):"");
+  sv("cli-street-num",c.street?(c.street.match(/\d+\s*$/)&&c.street.match(/\d+\s*$/)[0].trim()||""):""); sv("cli-hood",c.hood);
   sv("cli-city",c.city); sv("cli-state",c.state); sv("cli-zip",c.zip); sv("cli-obs",c.obs);
   sv("cli-lat",c.lat||""); sv("cli-lng",c.lng||"");
   sv("cli-lat2",c.lat2||""); sv("cli-lng2",c.lng2||"");
@@ -2618,13 +2625,13 @@ window.saveCli = async function(){
     phone: document.getElementById("cli-phone").value||null,
     phone2: isGestor ? (document.getElementById("cli-phone2").value||null) : null,
     phone2name: isGestor ? (document.getElementById("cli-phone2-name").value||null) : null,
-    street: document.getElementById("cli-street").value||null,
+    street: (()=>{ var s=document.getElementById("cli-street").value||""; var n=document.getElementById("cli-street-num")&&document.getElementById("cli-street-num").value||""; return (s+(n?" "+n:"")).trim()||null; })(),
     hood:  document.getElementById("cli-hood").value||null,
     city:  document.getElementById("cli-city").value||null,
     state: document.getElementById("cli-state").value||null,
     zip:   document.getElementById("cli-zip").value||null,
     obs:   isGestor ? (document.getElementById("cli-obs").value||null) : null,
-    street2:  document.getElementById("cli-street2")  ? document.getElementById("cli-street2").value||null  : null,
+    street2: (()=>{ var s=document.getElementById("cli-street2")?document.getElementById("cli-street2").value||"":""; var n=document.getElementById("cli-street-num2")&&document.getElementById("cli-street-num2").value||""; return (s+(n?" "+n:"")).trim()||null; })(),
     hood2:    document.getElementById("cli-hood2")    ? document.getElementById("cli-hood2").value||null    : null,
     city2:    document.getElementById("cli-city2")    ? document.getElementById("cli-city2").value||null    : null,
     state2:   document.getElementById("cli-state2")   ? document.getElementById("cli-state2").value||null   : null,
@@ -4124,7 +4131,9 @@ window.reverseGeocode = async function reverseGeocode(lat, lng){
       
       // Also store individual fields
       _leafletMarker._addrData = {
-        street: road + (num ? ", "+num : ""),
+        road: road,
+        num: num,
+        street: road,
         hood: hood,
         city: city,
         state: a.state_code || "SC",
@@ -4495,7 +4504,8 @@ window.confirmMapAddress = function(){
     if(document.getElementById("cli-lng2")) document.getElementById("cli-lng2").value = lng;
   } else {
     if(d){
-      if(document.getElementById("cli-street")) document.getElementById("cli-street").value = d.street || _mapSelectedAddr;
+      if(document.getElementById("cli-street")) document.getElementById("cli-street").value = d.road || (d.street?d.street.replace(/\s*\d+$/,"").trim():"") || _mapSelectedAddr;
+      if(document.getElementById("cli-street-num") && d.num) document.getElementById("cli-street-num").value = d.num;
       if(document.getElementById("cli-hood"))   document.getElementById("cli-hood").value   = d.hood  || "";
       if(document.getElementById("cli-city"))   document.getElementById("cli-city").value   = d.city  || "";
       if(document.getElementById("cli-state"))  document.getElementById("cli-state").value  = d.state || "SC";
