@@ -3609,6 +3609,8 @@ window.render = function render(){
       else if(fn==="new")openNew(id);
       else if(fn==="goto"){setView("ordens");openEdit(id);}
       else if(fn==="sol-os"||fn==="sol-del")solAction(fn,id);
+    });
+  });
 
   // Relatórios filter buttons
   const relPeriodBtns = mc.querySelectorAll(".rel-period-btn");
@@ -3622,8 +3624,6 @@ window.render = function render(){
 
   // Init charts if on relatorios view
 
-    });
-  });
 }
 
 function rDash(){
