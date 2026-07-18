@@ -4399,9 +4399,9 @@ let floatTimer = null;
 function showFloatNotif(icon, title, body){
   const el = document.getElementById("float-notif");
   if(!el) return;
-  document.getElementById("float-notif-icon").textContent = icon;
-  document.getElementById("float-notif-title").textContent = title;
-  document.getElementById("float-notif-body").textContent = body;
+  document.getElementById("fn-icon").textContent = icon;
+  document.getElementById("fn-title").textContent = title;
+  document.getElementById("fn-body").textContent = body;
   el.style.display = "flex";
   el.style.animation = "slideUp .3s ease";
   if(floatTimer) clearTimeout(floatTimer);
